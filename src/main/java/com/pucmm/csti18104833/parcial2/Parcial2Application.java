@@ -36,6 +36,7 @@ public class Parcial2Application {
         Javalin app = Javalin.create(config -> {
             config.router.ignoreTrailingSlashes = true;
             config.http.generateEtags = true;
+            config.http.maxRequestSize = 15L * 1024 * 1024; //15 mb
             config.staticFiles.add(staticFileConfig -> {
                 staticFileConfig.hostedPath = "/";
                 staticFileConfig.directory = "/publico";
