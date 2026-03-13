@@ -44,7 +44,7 @@
             <h3 class="fw-bold">Eventos</h3>
             <div class="d-flex align-items-center gap-2">
                 <label for="filtro-eventos" class="fw-semibold text-muted mb-0">Filtrar:</label>
-                <select id="filtro-eventos" class="form-select form-select-sm" style="width: 220px;" onchange="aplicarFiltroEventos()">
+                <select id="filtro-eventos" class="form-select form-select-sm" style="width: 220px;" onchange="cambiarFiltroEventos()">
                     <option value="todos">Todos los eventos</option>
                     <option value="proximos">Eventos proximos</option>
                     <option value="pasados">Eventos pasados</option>
@@ -65,6 +65,8 @@
                 <p>Cargando eventos académicos disponibles...</p>
             </div>
         </div>
+
+        <nav id="paginacion-eventos" class="d-flex justify-content-center mb-4" aria-label="Paginacion de eventos"></nav>
 
         <div id="error-container" style="display: none;"></div>
     </main>
@@ -245,6 +247,8 @@
         let currentUser = null;
         let todosLosEventos = [];
         let filtroActual = 'todos';
+        let paginaActual = 1;
+        const EVENTOS_POR_PAGINA = 6;
         let chartInstanciaInscriptos = null;
         let chartInstanciaAsistencia = null;
         let lectorQr = null;
@@ -308,29 +312,50 @@
                 todosLosEventos = await res.json();
                 if (todosLosEventos.length === 0) {
                     container.innerHTML = '<div class="col-12 text-center py-5 text-muted"><p>No hay eventos registrados actualmente.</p></div>';
+                    document.getElementById('paginacion-eventos').innerHTML = '';
                     return;
                 }
-                aplicarFiltroEventos();
+                aplicarFiltroEventos(true);
             } catch (error) {
                 console.error(error);
                 container.innerHTML = '<div class="col-12 text-center py-5 text-danger"><p>Error de conexion al cargar los eventos.</p></div>';
+                document.getElementById('paginacion-eventos').innerHTML = '';
             }
         }
 
-        function aplicarFiltroEventos() {
+        function cambiarFiltroEventos() {
+            aplicarFiltroEventos(true);
+        }
+
+        function aplicarFiltroEventos(resetPagina = false) {
             const selectFiltro = document.getElementById('filtro-eventos');
             const container = document.getElementById('contenedor-eventos');
+            const paginacion = document.getElementById('paginacion-eventos');
             filtroActual = selectFiltro ? selectFiltro.value : 'todos';
 
             const eventosFiltrados = todosLosEventos.filter(cumpleFiltroEvento);
             document.getElementById('vista-filtro').innerText = getFiltroLabel(filtroActual);
 
+            if (resetPagina) {
+                paginaActual = 1;
+            }
+
             if (eventosFiltrados.length === 0) {
                 container.innerHTML = '<div class="col-12 text-center py-5 text-muted"><p>No hay eventos que coincidan con este filtro.</p></div>';
+                paginacion.innerHTML = '';
                 return;
             }
 
-            container.innerHTML = eventosFiltrados.map(renderEventoCard).join('');
+            const totalPaginas = Math.ceil(eventosFiltrados.length / EVENTOS_POR_PAGINA);
+            if (paginaActual > totalPaginas) {
+                paginaActual = totalPaginas;
+            }
+
+            const inicio = (paginaActual - 1) * EVENTOS_POR_PAGINA;
+            const eventosPagina = eventosFiltrados.slice(inicio, inicio + EVENTOS_POR_PAGINA);
+
+            container.innerHTML = eventosPagina.map(renderEventoCard).join('');
+            renderPaginacion(totalPaginas);
         }
 
         function ajustarFiltrosSegunUsuario() {
@@ -358,6 +383,47 @@
                 selectFiltro.value = 'todos';
                 filtroActual = 'todos';
             }
+        }
+
+        function renderPaginacion(totalPaginas) {
+            const paginacion = document.getElementById('paginacion-eventos');
+            if (!paginacion) return;
+
+            if (totalPaginas <= 1) {
+                paginacion.innerHTML = '';
+                return;
+            }
+
+            let botones = '';
+            for (let pagina = 1; pagina <= totalPaginas; pagina++) {
+                botones += `
+                    <li class="page-item ${pagina === paginaActual ? 'active' : ''}">
+                        <button class="page-link" onclick="irAPagina(${pagina})">${pagina}</button>
+                    </li>
+                `;
+            }
+
+            paginacion.innerHTML = `
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item ${paginaActual === 1 ? 'disabled' : ''}">
+                        <button class="page-link" onclick="cambiarPagina(-1)">Anterior</button>
+                    </li>
+                    ${botones}
+                    <li class="page-item ${paginaActual === totalPaginas ? 'disabled' : ''}">
+                        <button class="page-link" onclick="cambiarPagina(1)">Siguiente</button>
+                    </li>
+                </ul>
+            `;
+        }
+
+        function irAPagina(pagina) {
+            paginaActual = pagina;
+            aplicarFiltroEventos(false);
+        }
+
+        function cambiarPagina(delta) {
+            paginaActual += delta;
+            aplicarFiltroEventos(false);
         }
 
         function cumpleFiltroEvento(ev) {
