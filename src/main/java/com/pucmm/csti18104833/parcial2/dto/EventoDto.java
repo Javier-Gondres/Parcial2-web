@@ -5,6 +5,7 @@ public record EventoDto(
     String titulo,
     String descripcion,
     String fecha,
+    String fechaFin,
     String lugar,
     int cupo,
     String estado,

@@ -4,6 +4,7 @@ public record EventoRequest(
     String titulo,
     String descripcion,
     String fecha,
+    String fechaFin,
     String lugar,
     Integer cupo,
     String estado

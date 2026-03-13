@@ -107,8 +107,12 @@
                         </div>
                         <div class="row">
                             <div class="col-md-3 mb-3">
-                                <label class="form-label fw-bold">Fecha y Hora</label>
+                                <label class="form-label fw-bold">Inicio</label>
                                 <input type="datetime-local" class="form-control" id="fechaEvento" required>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-bold">Fin</label>
+                                <input type="datetime-local" class="form-control" id="fechaFinEvento" required>
                             </div>
                             <div class="col-md-3 mb-3">
                                 <label class="form-label fw-bold">Lugar</label>
@@ -476,7 +480,8 @@
         function renderEventoCard(ev) {
             const cupoLleno = ev.inscritos >= ev.cupo;
             const isParticipant = currentUser && currentUser.rol === 'PARTICIPANTE';
-            const fechaFormateada = new Date(ev.fecha).toLocaleString();
+            const fechaInicioFormateada = new Date(ev.fecha).toLocaleString();
+            const fechaFinFormateada = new Date(ev.fechaFin).toLocaleString();
             const accionesParticipante = isParticipant ? renderAccionesParticipante(ev, cupoLleno) : '';
             const accionesGestion = ev.puedeGestionar ? renderAccionesGestion(ev) : '';
             const creador = ev.creadoPor ? `
@@ -500,7 +505,8 @@
                             </div>
                             <h5 class="card-title fw-bold text-dark">${ev.titulo}</h5>
                             <h6 class="card-subtitle mb-3 text-muted">
-                                ${fechaFormateada}<br>
+                                Inicio: ${fechaInicioFormateada}<br>
+                                Fin: ${fechaFinFormateada}<br>
                                 ${ev.lugar}
                             </h6>
                             <p class="card-text small text-secondary">${ev.descripcion}</p>
@@ -778,6 +784,7 @@
 
         function prepararModalEvento() {
             actualizarMinFechaEvento();
+            document.getElementById('fechaEvento').addEventListener('change', sincronizarMinFechaFin);
             document.getElementById('modalCrearEvento').addEventListener('hidden.bs.modal', () => {
                 document.getElementById('formCrearEvento').reset();
                 document.getElementById('editEventoId').value = "";
@@ -788,10 +795,21 @@
         }
 
         function actualizarMinFechaEvento() {
-            const campoFecha = document.getElementById('fechaEvento');
+            const campoFechaInicio = document.getElementById('fechaEvento');
+            const campoFechaFin = document.getElementById('fechaFinEvento');
             const ahora = new Date();
             ahora.setMinutes(ahora.getMinutes() - ahora.getTimezoneOffset());
-            campoFecha.min = ahora.toISOString().slice(0, 16);
+            const min = ahora.toISOString().slice(0, 16);
+            campoFechaInicio.min = min;
+            campoFechaFin.min = min;
+        }
+
+        function sincronizarMinFechaFin() {
+            const campoFechaInicio = document.getElementById('fechaEvento');
+            const campoFechaFin = document.getElementById('fechaFinEvento');
+            if (campoFechaInicio.value) {
+                campoFechaFin.min = campoFechaInicio.value;
+            }
         }
 
         async function editarEvento(id) {
@@ -808,6 +826,10 @@
                 const localDate = new Date(evento.fecha);
                 localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
                 document.getElementById('fechaEvento').value = localDate.toISOString().slice(0, 16);
+                const localDateFin = new Date(evento.fechaFin);
+                localDateFin.setMinutes(localDateFin.getMinutes() - localDateFin.getTimezoneOffset());
+                document.getElementById('fechaFinEvento').value = localDateFin.toISOString().slice(0, 16);
+                sincronizarMinFechaFin();
 
                 document.getElementById('lugarEvento').value = evento.lugar;
                 document.getElementById('cupoEvento').value = evento.cupo;
@@ -846,6 +868,7 @@
                 titulo: document.getElementById('tituloEvento').value,
                 descripcion: document.getElementById('descEvento').value,
                 fecha: document.getElementById('fechaEvento').value,
+                fechaFin: document.getElementById('fechaFinEvento').value,
                 lugar: document.getElementById('lugarEvento').value,
                 cupo: parseInt(document.getElementById('cupoEvento').value, 10),
                 estado: document.getElementById('estadoEvento').value

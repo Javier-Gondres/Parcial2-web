@@ -29,6 +29,9 @@ public class EventoEntity {
     @Column(nullable = false)
     private LocalDateTime fechaHora;
 
+    @Column(nullable = false)
+    private LocalDateTime fechaFin;
+
     @Column(nullable = false, length = 160)
     private String lugar;
 
@@ -72,6 +75,14 @@ public class EventoEntity {
 
     public void setFechaHora(LocalDateTime fechaHora) {
         this.fechaHora = fechaHora;
+    }
+
+    public LocalDateTime getFechaFin() {
+        return fechaFin;
+    }
+
+    public void setFechaFin(LocalDateTime fechaFin) {
+        this.fechaFin = fechaFin;
     }
 
     public String getLugar() {

@@ -78,9 +78,12 @@ public class EventoService {
             .orElseThrow(() -> new AppException(404, "Evento no encontrado"));
         validateCanModifyEvent(existing, currentUser);
 
+        LocalDateTime fechaInicio = parseStartDate(request.fecha());
+        LocalDateTime fechaFin = parseEndDate(request.fechaFin(), fechaInicio);
         existing.setTitulo(requireText(request.titulo(), "El titulo es obligatorio"));
         existing.setDescripcion(requireText(request.descripcion(), "La descripcion es obligatoria"));
-        existing.setFechaHora(parseDate(request.fecha()));
+        existing.setFechaHora(fechaInicio);
+        existing.setFechaFin(fechaFin);
         existing.setLugar(requireText(request.lugar(), "El lugar es obligatorio"));
         existing.setCupoMaximo(validateCapacity(request.cupo()));
         existing.setEstado(parseEstado(request.estado()));
@@ -210,6 +213,7 @@ public class EventoService {
             }
 
             validateCanModifyEvent(inscripcion.getEvento(), currentUser);
+            validateAttendanceWindow(inscripcion.getEvento());
 
             inscripcion.setAsistenciaMarcada(true);
             inscripcion.setFechaAsistencia(LocalDateTime.now());
@@ -268,9 +272,12 @@ public class EventoService {
         }
 
         EventoEntity evento = new EventoEntity();
+        LocalDateTime fechaInicio = parseStartDate(request.fecha());
+        LocalDateTime fechaFin = parseEndDate(request.fechaFin(), fechaInicio);
         evento.setTitulo(requireText(request.titulo(), "El titulo es obligatorio"));
         evento.setDescripcion(requireText(request.descripcion(), "La descripcion es obligatoria"));
-        evento.setFechaHora(parseDate(request.fecha()));
+        evento.setFechaHora(fechaInicio);
+        evento.setFechaFin(fechaFin);
         evento.setLugar(requireText(request.lugar(), "El lugar es obligatorio"));
         evento.setCupoMaximo(validateCapacity(request.cupo()));
         evento.setEstado(parseEstado(request.estado()));
@@ -308,6 +315,7 @@ public class EventoService {
             evento.getTitulo(),
             evento.getDescripcion(),
             evento.getFechaHora().format(ISO_DATE_TIME),
+            evento.getFechaFin().format(ISO_DATE_TIME),
             evento.getLugar(),
             evento.getCupoMaximo(),
             evento.getEstado().name(),
@@ -353,8 +361,18 @@ public class EventoService {
         if (evento.getEstado() != EstadoEvento.PUBLICADO) {
             throw new AppException(400, "Solo se puede inscribir a eventos publicados");
         }
-        if (!evento.getFechaHora().isAfter(LocalDateTime.now())) {
-            throw new AppException(400, "No se puede inscribir a eventos ya finalizados");
+        if (!evento.getFechaFin().isAfter(LocalDateTime.now())) {
+            throw new AppException(400, "No se puede inscribir a eventos que ya finalizaron");
+        }
+    }
+
+    private void validateAttendanceWindow(EventoEntity evento) {
+        LocalDateTime ahora = LocalDateTime.now();
+        if (ahora.isBefore(evento.getFechaHora())) {
+            throw new AppException(400, "La asistencia solo puede marcarse cuando el evento ya haya iniciado");
+        }
+        if (ahora.isAfter(evento.getFechaFin())) {
+            throw new AppException(400, "La asistencia solo puede marcarse mientras el evento este en curso");
         }
     }
 
@@ -395,7 +413,7 @@ public class EventoService {
         }
     }
 
-    private LocalDateTime parseDate(String value) {
+    private LocalDateTime parseStartDate(String value) {
         if (value == null || value.isBlank()) {
             throw new AppException(400, "La fecha del evento es obligatoria");
         }
@@ -410,6 +428,24 @@ public class EventoService {
                 throw appException;
             }
             throw new AppException(400, "Formato de fecha invalido");
+        }
+    }
+
+    private LocalDateTime parseEndDate(String value, LocalDateTime startDate) {
+        if (value == null || value.isBlank()) {
+            throw new AppException(400, "La fecha de fin del evento es obligatoria");
+        }
+        try {
+            LocalDateTime endDate = LocalDateTime.parse(value.trim());
+            if (!endDate.isAfter(startDate)) {
+                throw new AppException(400, "La fecha de fin debe ser posterior al inicio del evento");
+            }
+            return endDate;
+        } catch (Exception e) {
+            if (e instanceof AppException appException) {
+                throw appException;
+            }
+            throw new AppException(400, "Formato de fecha de fin invalido");
         }
     }
 }
