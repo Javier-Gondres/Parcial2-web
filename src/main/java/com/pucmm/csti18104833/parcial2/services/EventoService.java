@@ -400,8 +400,15 @@ public class EventoService {
             throw new AppException(400, "La fecha del evento es obligatoria");
         }
         try {
-            return LocalDateTime.parse(value.trim());
+            LocalDateTime fecha = LocalDateTime.parse(value.trim());
+            if (!fecha.isAfter(LocalDateTime.now())) {
+                throw new AppException(400, "La fecha del evento debe estar en el futuro");
+            }
+            return fecha;
         } catch (Exception e) {
+            if (e instanceof AppException appException) {
+                throw appException;
+            }
             throw new AppException(400, "Formato de fecha invalido");
         }
     }

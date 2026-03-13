@@ -777,12 +777,21 @@
         }
 
         function prepararModalEvento() {
+            actualizarMinFechaEvento();
             document.getElementById('modalCrearEvento').addEventListener('hidden.bs.modal', () => {
                 document.getElementById('formCrearEvento').reset();
                 document.getElementById('editEventoId').value = "";
                 document.querySelector('#modalCrearEvento .modal-title').innerText = "Gestion de Evento";
                 document.getElementById('estadoEvento').value = "PUBLICADO";
+                actualizarMinFechaEvento();
             });
+        }
+
+        function actualizarMinFechaEvento() {
+            const campoFecha = document.getElementById('fechaEvento');
+            const ahora = new Date();
+            ahora.setMinutes(ahora.getMinutes() - ahora.getTimezoneOffset());
+            campoFecha.min = ahora.toISOString().slice(0, 16);
         }
 
         async function editarEvento(id) {
@@ -791,6 +800,7 @@
                 if (!res.ok) throw new Error(await res.text());
 
                 const evento = await res.json();
+                actualizarMinFechaEvento();
                 document.getElementById('editEventoId').value = evento.id;
                 document.getElementById('tituloEvento').value = evento.titulo;
                 document.getElementById('descEvento').value = evento.descripcion || "";
