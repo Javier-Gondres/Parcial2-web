@@ -1,10 +1,10 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&display=swap');
 
 :root {
-    --bg-main: #6297b5;
-    --card-article: #1d4c6a;
-    --card-sidebar: #14354a;
-    --accent-blue: #78fffa;
+    --bg-main: #d4eaf5;
+    --card-article: #a8d0e6;
+    --card-sidebar: #f0f7fa;
+    --accent-blue: #8fc1e3;
 }
 
 body {
@@ -64,7 +64,7 @@ body {
     background-color: var(--card-sidebar) !important;
     padding: 40px;
     border-radius: 15px;
-    color: white !important;
+    color: #333 !important;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
     text-align: center;
 }
@@ -84,16 +84,16 @@ body {
     width: 100%;
     padding: 12px;
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.05);
-    color: white;
+    border: 1px solid rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.05);
+    color: #333;
 }
 
 .btn-simple {
     width: 100%;
     padding: 12px;
-    background-color: var(--bg-main);
-    color: white;
+    background-color: var(--card-article);
+    color: #333;
     border: none;
     border-radius: 8px;
     font-weight: bold;
