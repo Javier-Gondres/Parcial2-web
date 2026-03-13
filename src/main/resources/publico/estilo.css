@@ -14,6 +14,19 @@ body {
     min-height: 100vh;
 }
 
+.page-with-footer {
+    display: flex;
+    flex-direction: column;
+}
+
+.page-with-footer main {
+    flex: 1 0 auto;
+}
+
+.page-with-footer footer {
+    margin-top: auto;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
     width: 12px;
