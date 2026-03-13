@@ -67,6 +67,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Librería para generar el código QR en el cliente -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
 
     <!-- Modal Crear/Editar Evento-->
     <div class="modal fade text-dark" id="modalCrearEvento" tabindex="-1" aria-hidden="true">
@@ -212,11 +213,11 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body text-center">
-                    <p class="text-muted">Enfoque el código QR del participante aquí.</p>
+                    <p class="text-muted">Escanea el QR del participante o pega el contenido del codigo manualmente.</p>
+                    <div id="qr-reader" class="mb-3"></div>
                     <div class="p-4 bg-light mb-3 rounded border border-2 border-dashed border-success">
-                        <br><br>
                         <input type="text" id="simuladorQR" class="form-control text-center"
-                            placeholder="ID/Token simulado de prueba">
+                            placeholder='{"eventoId":1,"usuarioId":2,"token":"..."}'>
                     </div>
                     <button class="btn btn-success w-100 fw-bold" onclick="marcarAsistencia()">Validar / Marcar
                         Asistencia</button>
@@ -231,8 +232,12 @@
         let currentUser = null;
         let chartInstanciaInscriptos = null;
         let chartInstanciaAsistencia = null;
+        let lectorQr = null;
+        let scannerActivo = false;
 
         document.addEventListener("DOMContentLoaded", async () => {
+            prepararModalScanner();
+            prepararModalEvento();
             await cargarUsuario();
             await cargarEventos();
         });
@@ -240,35 +245,39 @@
         async function cargarUsuario() {
             try {
                 const res = await fetch('/api/usuario');
-                if (res.ok) {
-                    currentUser = await res.json();
-                    renderUserUI();
-                } else {
-                    currentUser = null;
-                }
+                currentUser = res.ok ? await res.json() : null;
             } catch (error) {
                 console.error("Error obteniendo usuario actual:", error);
+                currentUser = null;
             }
+            renderUserUI();
         }
 
         function renderUserUI() {
             const containerAuth = document.getElementById('auth-links');
-            if (currentUser) {
-                let extraButtons = '';
-                if (currentUser.rol === 'ADMINISTRADOR') {
-                    extraButtons += '<a href="GestionUsuarios.html" class="btn btn-sm btn-outline-primary">Gestión Usuarios</a>';
-                }
+            const panel = document.getElementById('panel-admin-organizador');
 
+            if (!currentUser) {
                 containerAuth.innerHTML = `
-                    <span class="text-dark fw-bold me-3">${currentUser.nombre} (${currentUser.rol})</span>
-                    ${extraButtons}
-                    <a href="/logout" class="btn btn-sm btn-outline-danger">Salir</a>
+                    <a href="Login.html" class="btn btn-sm btn-outline-primary">Iniciar sesion</a>
+                    <a href="Registro.html" class="btn btn-sm btn-primary">Registrarse</a>
                 `;
-
-                if (currentUser.rol === 'ADMINISTRADOR' || currentUser.rol === 'ORGANIZADOR') {
-                    document.getElementById('panel-admin-organizador').style.display = 'block';
-                }
+                panel.style.display = 'none';
+                return;
             }
+
+            let extraButtons = '';
+            if (currentUser.rol === 'ADMINISTRADOR') {
+                extraButtons += '<a href="GestionUsuarios.html" class="btn btn-sm btn-outline-primary">Gestion Usuarios</a>';
+            }
+
+            containerAuth.innerHTML = `
+                <span class="text-dark fw-bold me-2">${currentUser.nombre} (${currentUser.rol})</span>
+                ${extraButtons}
+                <a href="/logout" class="btn btn-sm btn-outline-danger">Salir</a>
+            `;
+
+            panel.style.display = (currentUser.rol === 'ADMINISTRADOR' || currentUser.rol === 'ORGANIZADOR') ? 'block' : 'none';
         }
 
         async function cargarEventos() {
@@ -283,101 +292,132 @@
                     return;
                 }
 
-                let html = '';
-                eventos.forEach(ev => {
-                    const cupoLleno = ev.inscritos >= ev.cupo;
-                    const canManage = currentUser && (currentUser.rol === 'ADMINISTRADOR' || currentUser.rol === 'ORGANIZADOR');
-                    const isParticipant = currentUser && currentUser.rol === 'PARTICIPANTE';
-
-                    html += `
-                    <div class="col">
-                        <div class="card h-100 shadow-sm border-0">
-                            <div class="card-body">
-                                <div class="mb-2 float-end">
-                                    <span class="badge ${ev.estado === 'PUBLICADO' ? 'bg-success' : (ev.estado === 'CANCELADO' ? 'bg-danger' : 'bg-secondary')} me-1">
-                                        ${ev.estado}
-                                    </span>
-                                    <span class="badge ${cupoLleno ? 'bg-danger' : 'bg-primary'}">
-                                        ${ev.inscritos} / ${ev.cupo}
-                                    </span>
-                                </div>
-                                <h5 class="card-title fw-bold text-dark">${ev.titulo}</h5>
-                                <h6 class="card-subtitle mb-3 text-muted">
-                                    ${new Date(ev.fecha).toLocaleString()} <br>
-                                    ${ev.lugar}
-                                </h6>
-                                <p class="card-text small text-secondary">${ev.descripcion || ev.desc}</p>
-                            </div>
-                            <div class="card-footer bg-white border-top-0 pt-0 pb-3">
-                                
-                                ${isParticipant ? `
-                                    <button class="btn btn-sm ${cupoLleno ? 'btn-secondary disabled' : 'btn-success'} w-100 mb-2 fw-bold" onclick="inscribirse(${ev.id})">
-                                        ${cupoLleno ? 'Cupo Lleno' : 'Inscribirse al Evento'}
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-secondary w-100 mb-2 fw-bold" onclick="generarYMostrarQR(${ev.id}, '${currentUser.id || currentUser.usuario}')">Ver Mi Entrada (QR)</button>
-                                    <button class="btn btn-sm btn-outline-danger w-100" onclick="cancelarInscripcion(${ev.id})">Cancelar Inscripción</button>
-                                ` : ''}
-
-                                ${canManage ? `
-                                    <div class="d-flex gap-2 mb-2">
-                                        <button class="btn btn-sm btn-outline-primary flex-fill fw-bold" onclick="editarEvento(${ev.id})">Editar</button>
-                                        <button class="btn btn-sm btn-outline-danger flex-fill fw-bold" onclick="eliminarEvento(${ev.id})">Borrar</button>
-                                    </div>
-                                    <button class="btn btn-sm btn-info w-100 text-dark fw-bold" onclick="abrirResumen(${ev.id})">Ver Resumen/Estadísticas</button>
-                                ` : ''}
-                            </div>
-                        </div>
-                    </div>
-                    `;
-                });
-
+                const html = eventos.map(renderEventoCard).join('');
                 container.innerHTML = html;
             } catch (error) {
                 console.error(error);
-                container.innerHTML = '<div class="col-12 text-center py-5 text-danger"><p>Error de conexión al cargar los eventos.</p></div>';
+                container.innerHTML = '<div class="col-12 text-center py-5 text-danger"><p>Error de conexion al cargar los eventos.</p></div>';
             }
+        }
+
+        function renderEventoCard(ev) {
+            const cupoLleno = ev.inscritos >= ev.cupo;
+            const isParticipant = currentUser && currentUser.rol === 'PARTICIPANTE';
+            const fechaFormateada = new Date(ev.fecha).toLocaleString();
+            const accionesParticipante = isParticipant ? renderAccionesParticipante(ev, cupoLleno) : '';
+            const accionesGestion = ev.puedeGestionar ? renderAccionesGestion(ev) : '';
+
+            return `
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0">
+                        <div class="card-body">
+                            <div class="mb-2 float-end">
+                                <span class="badge ${ev.estado === 'PUBLICADO' ? 'bg-success' : (ev.estado === 'CANCELADO' ? 'bg-danger' : 'bg-secondary')} me-1">
+                                    ${ev.estado}
+                                </span>
+                                <span class="badge ${cupoLleno ? 'bg-danger' : 'bg-primary'}">
+                                    ${ev.inscritos} / ${ev.cupo}
+                                </span>
+                            </div>
+                            <h5 class="card-title fw-bold text-dark">${ev.titulo}</h5>
+                            <h6 class="card-subtitle mb-3 text-muted">
+                                ${fechaFormateada}<br>
+                                ${ev.lugar}
+                            </h6>
+                            <p class="card-text small text-secondary">${ev.descripcion}</p>
+                            ${ev.creadoPor ? `<p class="small text-muted mb-0">Organiza: ${ev.creadoPor}</p>` : ''}
+                            ${ev.asistenciaMarcada ? '<span class="badge bg-success mt-2">Asistencia marcada</span>' : ''}
+                        </div>
+                        <div class="card-footer bg-white border-top-0 pt-0 pb-3">
+                            ${accionesParticipante}
+                            ${accionesGestion}
+                            ${!currentUser ? '<a class="btn btn-sm btn-outline-primary w-100" href="Login.html">Inicia sesion para inscribirte</a>' : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderAccionesParticipante(ev, cupoLleno) {
+            if (ev.inscrito) {
+                return `
+                    <button class="btn btn-sm btn-outline-secondary w-100 mb-2 fw-bold" onclick="generarYMostrarQR(${ev.id})">Ver Mi Entrada (QR)</button>
+                    ${ev.puedeCancelar ? `<button class="btn btn-sm btn-outline-danger w-100" onclick="cancelarInscripcion(${ev.id})">Cancelar Inscripcion</button>` : ''}
+                `;
+            }
+
+            const disabled = cupoLleno || ev.estado !== 'PUBLICADO';
+            const label = ev.estado !== 'PUBLICADO' ? 'No disponible' : (cupoLleno ? 'Cupo lleno' : 'Inscribirse al evento');
+            return `
+                <button class="btn btn-sm ${disabled ? 'btn-secondary disabled' : 'btn-success'} w-100 mb-2 fw-bold" onclick="inscribirse(${ev.id})">
+                    ${label}
+                </button>
+            `;
+        }
+
+        function renderAccionesGestion(ev) {
+            return `
+                <div class="d-flex gap-2 mb-2">
+                    <button class="btn btn-sm btn-outline-primary flex-fill fw-bold" onclick="editarEvento(${ev.id})">Editar</button>
+                    ${ev.puedeEliminar ? `<button class="btn btn-sm btn-outline-danger flex-fill fw-bold" onclick="eliminarEvento(${ev.id})">Eliminar</button>` : ''}
+                </div>
+                <button class="btn btn-sm btn-info w-100 text-dark fw-bold" onclick="abrirResumen(${ev.id})">Ver Resumen/Estadisticas</button>
+            `;
         }
 
         async function inscribirse(eventoId) {
             try {
                 const res = await fetch(`/api/eventos/${eventoId}/inscribir`, { method: 'POST' });
-                if (res.ok) {
-                    alert("¡Inscripción exitosa!");
-                    cargarEventos();
-                } else {
-                    const msg = await res.text();
-                    alert("Error al intentar inscribirse: " + msg);
+                if (!res.ok) {
+                    throw new Error(await res.text());
                 }
+
+                const payload = await res.json();
+                await cargarEventos();
+                await mostrarQr(payload);
+                alert("Inscripcion realizada correctamente.");
             } catch (error) {
                 console.error(error);
-                alert("Error de conexión.");
+                alert("Error al intentar inscribirse: " + error.message);
             }
         }
 
         async function cancelarInscripcion(eventoId) {
-            if (!confirm("¿Está seguro de cancelar su inscripción a este evento antes de la fecha?")) return;
+            if (!confirm("¿Deseas cancelar tu inscripcion a este evento?")) return;
+
             try {
                 const res = await fetch(`/api/eventos/${eventoId}/cancelar`, { method: 'POST' });
-                if (res.ok) {
-                    alert("Inscripción cancelada.");
-                    cargarEventos();
-                } else {
-                    alert("Error al cancelar la inscripción.");
+                if (!res.ok) {
+                    throw new Error(await res.text());
                 }
+                await cargarEventos();
+                alert("Inscripcion cancelada.");
             } catch (error) {
                 console.error(error);
+                alert("No se pudo cancelar la inscripcion: " + error.message);
             }
         }
 
-        function generarYMostrarQR(eventoId, usuarioId) {
+        async function generarYMostrarQR(eventoId) {
+            try {
+                const res = await fetch(`/api/eventos/${eventoId}/mi-qr`);
+                if (!res.ok) {
+                    throw new Error(await res.text());
+                }
+                const payload = await res.json();
+                await mostrarQr(payload);
+            } catch (error) {
+                console.error(error);
+                alert("No se pudo generar el QR: " + error.message);
+            }
+        }
+
+        async function mostrarQr(payload) {
             const qrContainer = document.getElementById('qr-container');
             qrContainer.innerHTML = '';
 
-            const tokenValidacion = btoa(eventoId + ':' + usuarioId + ':token_generado');
-            const payload = JSON.stringify({ eventoId: eventoId, usuarioId: usuarioId, token: tokenValidacion });
-
             new QRCode(qrContainer, {
-                text: payload,
+                text: JSON.stringify(payload),
                 width: 220,
                 height: 220,
                 colorDark: "#000000",
@@ -392,7 +432,7 @@
         async function abrirResumen(eventoId) {
             try {
                 const res = await fetch(`/api/eventos/${eventoId}/estadisticas`);
-                if (!res.ok) throw new Error("Fallo en la consulta de estadísticas");
+                if (!res.ok) throw new Error(await res.text());
                 const stats = await res.json();
 
                 document.getElementById('stat-inscritos').innerText = stats.totalInscritos || 0;
@@ -401,11 +441,10 @@
 
                 const modal = new bootstrap.Modal(document.getElementById('modalEstadisticas'));
                 modal.show();
-
                 setTimeout(() => dibujarGraficosEstadisticas(stats), 300);
             } catch (error) {
                 console.error(error);
-                alert("Error técnico al recuperar estadísticas del evento.");
+                alert("Error tecnico al recuperar estadisticas: " + error.message);
             }
         }
 
@@ -419,7 +458,7 @@
                 data: {
                     labels: stats.fechas || [],
                     datasets: [{
-                        label: 'Número de Inscripciones',
+                        label: 'Numero de inscripciones',
                         data: stats.inscripcionesPorDia || [],
                         backgroundColor: 'rgba(54, 162, 235, 0.6)',
                         borderColor: 'rgba(54, 162, 235, 1)',
@@ -436,7 +475,7 @@
                 data: {
                     labels: stats.horas || [],
                     datasets: [{
-                        label: 'Asistencia Confirmada (Acumulada)',
+                        label: 'Asistencia por hora',
                         data: stats.asistenciaPorHora || [],
                         backgroundColor: 'rgba(75, 192, 192, 0.4)',
                         borderColor: 'rgba(75, 192, 192, 1)',
@@ -448,83 +487,119 @@
             });
         }
 
+        function prepararModalScanner() {
+            const scannerModal = document.getElementById('modalEscanearQR');
+            scannerModal.addEventListener('shown.bs.modal', iniciarScanner);
+            scannerModal.addEventListener('hidden.bs.modal', detenerScanner);
+        }
+
+        async function iniciarScanner() {
+            if (scannerActivo || typeof Html5Qrcode === 'undefined') return;
+
+            try {
+                lectorQr = new Html5Qrcode("qr-reader");
+                await lectorQr.start(
+                    { facingMode: "environment" },
+                    { fps: 10, qrbox: 220 },
+                    async (decodedText) => {
+                        document.getElementById('simuladorQR').value = decodedText;
+                        await marcarAsistencia();
+                    },
+                    () => { }
+                );
+                scannerActivo = true;
+            } catch (error) {
+                console.error("No se pudo iniciar la camara:", error);
+            }
+        }
+
+        async function detenerScanner() {
+            if (!lectorQr || !scannerActivo) return;
+            try {
+                await lectorQr.stop();
+                await lectorQr.clear();
+            } catch (error) {
+                console.error("No se pudo detener el scanner:", error);
+            } finally {
+                scannerActivo = false;
+                lectorQr = null;
+            }
+        }
+
         async function marcarAsistencia() {
-            const val = document.getElementById('simuladorQR').value;
+            const val = document.getElementById('simuladorQR').value.trim();
             const resContainer = document.getElementById('resultado-scanner');
 
             if (!val) {
-                resContainer.innerHTML = '<div class="alert alert-danger">El código leído está vacío.</div>';
+                resContainer.innerHTML = '<div class="alert alert-danger">El contenido del QR esta vacio.</div>';
                 return;
             }
 
             try {
+                const payload = JSON.parse(val);
                 const res = await fetch('/api/eventos/asistencia', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: val
+                    body: JSON.stringify(payload)
                 });
 
-                if (res.ok) {
-                    resContainer.innerHTML = `
-                    <div class="alert alert-success d-flex align-items-center" role="alert">
-                      <div>¡Asistencia registrada exitosamente!</div>
-                    </div>`;
-                } else {
-                    const msg = await res.text();
-                    resContainer.innerHTML = `
-                    <div class="alert alert-warning d-flex align-items-center" role="alert">
-                      <div>Aviso: ${msg}</div>
-                    </div>`;
+                if (!res.ok) {
+                    throw new Error(await res.text());
                 }
+
+                resContainer.innerHTML = '<div class="alert alert-success">Asistencia registrada exitosamente.</div>';
             } catch (error) {
                 console.error(error);
-                resContainer.innerHTML = '<div class="alert alert-danger">Error conectando con el servidor.</div>';
+                resContainer.innerHTML = `<div class="alert alert-warning">Aviso: ${error.message}</div>`;
             }
 
             setTimeout(() => { resContainer.innerHTML = ''; }, 4000);
         }
 
+        function prepararModalEvento() {
+            document.getElementById('modalCrearEvento').addEventListener('hidden.bs.modal', () => {
+                document.getElementById('formCrearEvento').reset();
+                document.getElementById('editEventoId').value = "";
+                document.querySelector('#modalCrearEvento .modal-title').innerText = "Gestion de Evento";
+                document.getElementById('estadoEvento').value = "PUBLICADO";
+            });
+        }
+
         async function editarEvento(id) {
             try {
                 const res = await fetch(`/api/eventos/${id}`);
-                if (!res.ok) throw new Error("Error técnico obteniendo información a editar");
+                if (!res.ok) throw new Error(await res.text());
 
                 const evento = await res.json();
                 document.getElementById('editEventoId').value = evento.id;
                 document.getElementById('tituloEvento').value = evento.titulo;
-                document.getElementById('descEvento').value = evento.descripcion || evento.desc || "";
+                document.getElementById('descEvento').value = evento.descripcion || "";
 
-                if (evento.fecha) {
-                    const localDate = new Date(evento.fecha);
-                    localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
-                    document.getElementById('fechaEvento').value = localDate.toISOString().slice(0, 16);
-                }
+                const localDate = new Date(evento.fecha);
+                localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
+                document.getElementById('fechaEvento').value = localDate.toISOString().slice(0, 16);
 
                 document.getElementById('lugarEvento').value = evento.lugar;
                 document.getElementById('cupoEvento').value = evento.cupo;
                 document.getElementById('estadoEvento').value = evento.estado || "PUBLICADO";
 
                 document.querySelector('#modalCrearEvento .modal-title').innerText = "Editar Evento";
-                const modal = new bootstrap.Modal(document.getElementById('modalCrearEvento'));
-                modal.show();
+                new bootstrap.Modal(document.getElementById('modalCrearEvento')).show();
             } catch (error) {
                 console.error(error);
-                alert("Ocurrió un error consultando los datos del evento al servidor.");
+                alert("No se pudieron cargar los datos del evento: " + error.message);
             }
         }
 
         async function eliminarEvento(id) {
-            if (!confirm("¿Seguro que desea eliminar/cancelar completamente este evento?")) return;
+            if (!confirm("¿Seguro que deseas eliminar este evento?")) return;
             try {
                 const res = await fetch(`/api/eventos/${id}`, { method: 'DELETE' });
-                if (res.ok) {
-                    cargarEventos();
-                } else {
-                    alert("No se pudo eliminar el evento. Verifica tus permisos.");
-                }
+                if (!res.ok) throw new Error(await res.text());
+                await cargarEventos();
             } catch (error) {
                 console.error(error);
-                alert("Error de red.");
+                alert("No se pudo eliminar el evento: " + error.message);
             }
         }
 
@@ -537,39 +612,29 @@
 
             const idObj = document.getElementById('editEventoId').value;
             const isEdit = idObj !== "";
-
             const payload = {
                 titulo: document.getElementById('tituloEvento').value,
                 descripcion: document.getElementById('descEvento').value,
                 fecha: document.getElementById('fechaEvento').value,
                 lugar: document.getElementById('lugarEvento').value,
-                cupo: parseInt(document.getElementById('cupoEvento').value),
+                cupo: parseInt(document.getElementById('cupoEvento').value, 10),
                 estado: document.getElementById('estadoEvento').value
             };
 
-            const targetUrl = isEdit ? `/api/eventos/${idObj}` : '/api/eventos';
-            const reqMethod = isEdit ? 'PUT' : 'POST';
-
             try {
-                const res = await fetch(targetUrl, {
-                    method: reqMethod,
+                const res = await fetch(isEdit ? `/api/eventos/${idObj}` : '/api/eventos', {
+                    method: isEdit ? 'PUT' : 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
 
-                if (res.ok) {
-                    const modal = bootstrap.Modal.getInstance(document.getElementById('modalCrearEvento'));
-                    modal.hide();
-                    formObj.reset();
-                    document.getElementById('editEventoId').value = "";
-                    cargarEventos();
-                } else {
-                    const msg = await res.text();
-                    alert("Problema al guardar: " + msg);
-                }
+                if (!res.ok) throw new Error(await res.text());
+
+                bootstrap.Modal.getInstance(document.getElementById('modalCrearEvento')).hide();
+                await cargarEventos();
             } catch (error) {
                 console.error(error);
-                alert("Error conectando con el servidor para guardar.");
+                alert("Problema al guardar el evento: " + error.message);
             }
         }
     </script>
