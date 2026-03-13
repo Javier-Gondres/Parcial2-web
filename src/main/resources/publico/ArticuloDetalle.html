@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="estilo.css">
+    <title>Artículo - Programación Web</title>
+</head>
+
+<body>
+    <header class="header container-fluid py-4 mb-4 border-bottom shadow-sm">
+        <div class="container d-flex justify-content-between align-items-center">
+            <h1 class="m-0"><a href="/Inicio.html" class="text-white text-decoration-none">Programacion Web</a></h1>
+            <nav id="auth-links" class="nav-links d-none d-md-block">
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div id="error-container" style="display: none;"></div>
+                <div id="detalle-articulo">
+                    <div class="text-center p-5 text-white">Cargando artículo...</div>
+                </div>
+
+                <hr class="my-5 border-white opacity-25">
+
+                <section id="seccion-comentarios" class="mb-5">
+                    <h3 class="text-white mb-4">Comentarios</h3>
+                    <div id="lista-comentarios" class="mb-4">
+                    </div>
+
+                    <div id="form-comentario-box" style="display:none;">
+                        <div class="card bg-dark text-white border-secondary">
+                            <div class="card-body">
+                                <h5 class="card-title">Deja un comentario</h5>
+                                <form id="formComentario">
+                                    <div class="mb-3">
+                                        <textarea class="form-control bg-secondary text-white border-0"
+                                            id="textoComentario" rows="3" placeholder="Escribe tu comentario aquí..."
+                                            required></textarea>
+                                    </div>
+                                    <button type="button" class="btn btn-primary fw-bold"
+                                        onclick="enviarComentario()">Enviar Comentario</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="login-to-comment" class="alert alert-info" style="display:none;">
+                        Debes <a href="/Login.html" class="alert-link">iniciar sesión</a> para comentar.
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <footer class="container-fluid py-4 mt-5 border-top text-center opacity-75">
+        <p>2026 Programación Web - ICC-352</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        let currentUser = null;
+        let articuloId = new URLSearchParams(window.location.search).get('id');
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            if (!articuloId) {
+                window.location.href = '/Inicio.html';
+                return;
+            }
+            await loadUser();
+            await loadArticulo();
+        });
+
+        async function loadUser() {
+            try {
+                const res = await fetch('/api/usuario');
+                if (res.status === 200) {
+                    currentUser = await res.json();
+                    renderUserUI();
+                    document.getElementById('form-comentario-box').style.display = 'block';
+                } else {
+                    currentUser = null;
+                    renderGuestUI();
+                    document.getElementById('login-to-comment').style.display = 'block';
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function renderUserUI() {
+            document.getElementById('auth-links').innerHTML = `
+                <span class="text-dark me-3 fw-bold">Hola, ${currentUser.nombre || currentUser.usuario}</span>
+                <a href="/logout" class="btn btn-outline-danger fw-bold btn-sm">Salir</a>`;
+        }
+
+        function renderGuestUI() {
+            document.getElementById('auth-links').innerHTML = `
+                <a href="/Login.html" class="btn btn-outline-dark fw-bold me-2">Login</a>
+                <a href="/Registro.html" class="btn btn-dark fw-bold">Registro</a>`;
+        }
+
+        async function loadArticulo() {
+            const container = document.getElementById('detalle-articulo');
+            try {
+                const res = await fetch('/api/articulos/' + articuloId);
+                if (!res.ok) {
+                    const status = res.status;
+                    let mensaje = 'Artículo no encontrado.';
+                    if (status === 400) {
+                        mensaje = 'ID de artículo inválido.';
+                    } else if (status === 404) {
+                        mensaje = 'El artículo no existe o fue eliminado.';
+                    }
+                    container.innerHTML = `
+                        <div class="alert alert-danger">
+                            <strong>Error</strong><br>${mensaje}
+                            <br><a href="/Inicio.html" class="btn btn-primary mt-3">Volver al inicio</a>
+                        </div>
+                    `;
+                    return;
+                }
+                const a = await res.json();
+
+                document.title = `${a.titulo} - Programación Web`;
+
+                container.innerHTML = `
+                    <article class="articulo shadow-lg p-5">
+                        <div class="d-flex justify-content-between align-items-start mb-4">
+                            <h1 class="display-4 fw-bold">${a.titulo}</h1>
+                            ${canDelete(a) ? `
+                            <button class="btn btn-danger" onclick="eliminarArticulo(${a.id}, '${a.titulo.replace(/'/g, "\\'")}')">Eliminar Artículo</button>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="mb-4">
+                            ${(a.misEtiquetas || []).map(t => `<span class="badge bg-info text-dark me-2 p-2">${t.etiqueta}</span>`).join('')}
+                        </div>
+
+                        <div class="text-white-50 mb-5 pb-3 border-bottom border-secondary">
+                            Por <strong>${a.autor.nombre || a.autor.usuario}</strong> el ${a.fecha}
+                        </div>
+
+                        <div class="articulo-cuerpo lead" style="white-space: pre-wrap; line-height: 1.8;">
+                            ${a.cuerpo}
+                        </div>
+                    </article>
+                `;
+
+                renderComentarios(a.misComentarios || []);
+
+            } catch (e) {
+                console.error('Error cargando artículo:', e);
+                container.innerHTML = `
+                    <div class="alert alert-danger">
+                        <strong>Error al cargar el artículo</strong><br>
+                        No se pudo conectar con el servidor. Por favor recarga la página.
+                        <br><button class="btn btn-primary mt-3" onclick="location.reload()">Recargar</button>
+                    </div>
+                `;
+            }
+        }
+
+        function renderComentarios(comentarios) {
+            const container = document.getElementById('lista-comentarios');
+            container.innerHTML = comentarios.map(c => `
+                <div class="card bg-dark border-secondary mb-3 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <h6 class="card-subtitle mb-2 text-info fw-bold">${c.autor.nombre || c.autor.usuario}</h6>
+                        </div>
+                        <p class="card-text text-white opacity-90">${c.comentario}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function enviarComentario() {
+            const texto = document.getElementById('textoComentario').value.trim();
+            if (!texto) {
+                mostrarMensaje('error', 'El comentario no puede estar vacío.');
+                return;
+            }
+
+            const formData = new URLSearchParams();
+            formData.append('comentario', texto);
+
+            try {
+                const res = await fetch(`/api/articulos/${articuloId}/comentarios`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+
+                if (res.ok) {
+                    mostrarMensaje('success', 'Comentario publicado exitosamente.');
+                    document.getElementById('textoComentario').value = '';
+                    await loadArticulo();
+                } else {
+                    const status = res.status;
+                    let mensaje = 'Error al enviar comentario.';
+                    if (status === 401) {
+                        mensaje = 'Debes iniciar sesión para comentar.';
+                    } else if (status === 400) {
+                        mensaje = 'El comentario no puede estar vacío.';
+                    } else if (status === 404) {
+                        mensaje = 'El artículo no existe.';
+                    }
+                    mostrarMensaje('error', mensaje);
+                }
+            } catch (e) {
+                console.error('Error al enviar comentario:', e);
+                mostrarMensaje('error', 'Error de conexión. Por favor intenta de nuevo.');
+            }
+        }
+        
+        function mostrarMensaje(tipo, mensaje) {
+            const container = document.getElementById('error-container');
+            const alertClass = tipo === 'success' ? 'alert-success' : 'alert-danger';
+            const icon = tipo === 'success' ? '✓' : '✗';
+            
+            container.innerHTML = `
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    <strong>${icon}</strong> ${mensaje}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            container.style.display = 'block';
+            
+            setTimeout(() => {
+                const alert = container.querySelector('.alert');
+                if (alert) {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }
+            }, 5000);
+        }
+
+        function canDelete(a) {
+            if (!currentUser) return false;
+            if (currentUser.administrador) return true;
+            if (currentUser.autor && a.autor && a.autor.usuario === currentUser.usuario) return true;
+            return false;
+        }
+
+        async function eliminarArticulo(id, titulo) {
+            const confirmar = confirm(`¿Estás seguro de eliminar el artículo "${titulo}"?\n\nEsta acción es permanente y no se puede deshacer.\n\n¿Deseas continuar?`);
+            if (!confirmar) return;
+            
+            try {
+                const res = await fetch('/api/articulos/' + id, { method: 'DELETE' });
+                if (res.ok) {
+                    mostrarMensaje('success', 'Artículo eliminado exitosamente. Redirigiendo...');
+                    setTimeout(() => {
+                        window.location.href = '/Inicio.html';
+                    }, 1500);
+                } else {
+                    const status = res.status;
+                    let mensaje = 'Error al eliminar el artículo.';
+                    if (status === 403) {
+                        mensaje = 'No tienes permisos para eliminar este artículo.';
+                    } else if (status === 404) {
+                        mensaje = 'El artículo no existe o ya fue eliminado.';
+                    } else if (status === 401) {
+                        mensaje = 'Debes iniciar sesión para realizar esta acción.';
+                    }
+                    mostrarMensaje('error', mensaje);
+                }
+            } catch (e) {
+                console.error('Error al eliminar artículo:', e);
+                mostrarMensaje('error', 'Error de conexión. Por favor verifica tu internet e intenta de nuevo.');
+            }
+        }
+    </script>
+</body>
+
+</html>

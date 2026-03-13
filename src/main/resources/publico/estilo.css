@@ -1,0 +1,112 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&display=swap');
+
+:root {
+    --bg-main: #6297b5;
+    --card-article: #1d4c6a;
+    --card-sidebar: #14354a;
+    --accent-blue: #78fffa;
+}
+
+body {
+    font-family: 'Playfair Display', serif !important;
+    background-color: var(--bg-main) !important;
+    color: #333 !important;
+    min-height: 100vh;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: #4a748c;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #000000;
+    border-radius: 6px;
+    border: 3px solid #4a748c;
+}
+
+/* Header */
+.header {
+    background-color: white !important;
+}
+
+/* Blog Components */
+.articulo {
+    padding: 25px !important;
+    margin: 25px 0 !important;
+    background-color: var(--card-article) !important;
+    color: #ffffff !important;
+    border-radius: 5px !important;
+    transition: transform 0.3s ease;
+}
+
+.sidebar-card {
+    background-color: var(--card-sidebar) !important;
+    color: #ffffff !important;
+    border-radius: 12px !important;
+    padding: 25px !important;
+    margin-bottom: 20px !important;
+}
+
+.sidebar-card h2 {
+    font-style: italic;
+    text-decoration: underline;
+}
+
+/* Simple Form Styles */
+.form-container-simple {
+    max-width: 400px;
+    margin: 80px auto;
+    background-color: var(--card-sidebar) !important;
+    padding: 40px;
+    border-radius: 15px;
+    color: white !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    text-align: center;
+}
+
+.form-group-simple {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.form-group-simple label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.form-group-simple input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+}
+
+.btn-simple {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--bg-main);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn-etiqueta {
+    display: inline-block !important;
+    padding: 8px 16px !important;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: var(--accent-blue) !important;
+    text-decoration: none !important;
+    font-weight: bold !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
