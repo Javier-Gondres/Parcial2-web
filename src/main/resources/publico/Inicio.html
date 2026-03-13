@@ -41,8 +41,21 @@
         </div>
 
         <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3 class="fw-bold">Próximos Eventos</h3>
-            <span class="badge bg-secondary p-2" id="vista-filtro">Todos los eventos</span>
+            <h3 class="fw-bold">Eventos</h3>
+            <div class="d-flex align-items-center gap-2">
+                <label for="filtro-eventos" class="fw-semibold text-muted mb-0">Filtrar:</label>
+                <select id="filtro-eventos" class="form-select form-select-sm" style="width: 220px;" onchange="aplicarFiltroEventos()">
+                    <option value="todos">Todos los eventos</option>
+                    <option value="proximos">Eventos proximos</option>
+                    <option value="pasados">Eventos pasados</option>
+                    <option value="publicados">Eventos publicados</option>
+                    <option value="cancelados">Eventos cancelados</option>
+                    <option value="borrador">Eventos en borrador</option>
+                    <option value="mis-inscripciones">Mis inscripciones</option>
+                    <option value="mis-eventos">Eventos que gestiono</option>
+                </select>
+                <span class="badge bg-secondary p-2" id="vista-filtro">Todos los eventos</span>
+            </div>
         </div>
 
         <!-- Layout estilo Lista de tarjetas (Grid Responsiva) -->
@@ -230,6 +243,8 @@
     <!-- Funci -->
     <script>
         let currentUser = null;
+        let todosLosEventos = [];
+        let filtroActual = 'todos';
         let chartInstanciaInscriptos = null;
         let chartInstanciaAsistencia = null;
         let lectorQr = null;
@@ -251,6 +266,7 @@
                 currentUser = null;
             }
             renderUserUI();
+            ajustarFiltrosSegunUsuario();
         }
 
         function renderUserUI() {
@@ -289,17 +305,105 @@
                 const res = await fetch('/api/eventos');
                 if (!res.ok) throw new Error("No se pudo cargar la lista de eventos");
 
-                const eventos = await res.json();
-                if (eventos.length === 0) {
+                todosLosEventos = await res.json();
+                if (todosLosEventos.length === 0) {
                     container.innerHTML = '<div class="col-12 text-center py-5 text-muted"><p>No hay eventos registrados actualmente.</p></div>';
                     return;
                 }
-
-                const html = eventos.map(renderEventoCard).join('');
-                container.innerHTML = html;
+                aplicarFiltroEventos();
             } catch (error) {
                 console.error(error);
                 container.innerHTML = '<div class="col-12 text-center py-5 text-danger"><p>Error de conexion al cargar los eventos.</p></div>';
+            }
+        }
+
+        function aplicarFiltroEventos() {
+            const selectFiltro = document.getElementById('filtro-eventos');
+            const container = document.getElementById('contenedor-eventos');
+            filtroActual = selectFiltro ? selectFiltro.value : 'todos';
+
+            const eventosFiltrados = todosLosEventos.filter(cumpleFiltroEvento);
+            document.getElementById('vista-filtro').innerText = getFiltroLabel(filtroActual);
+
+            if (eventosFiltrados.length === 0) {
+                container.innerHTML = '<div class="col-12 text-center py-5 text-muted"><p>No hay eventos que coincidan con este filtro.</p></div>';
+                return;
+            }
+
+            container.innerHTML = eventosFiltrados.map(renderEventoCard).join('');
+        }
+
+        function ajustarFiltrosSegunUsuario() {
+            const selectFiltro = document.getElementById('filtro-eventos');
+            if (!selectFiltro) return;
+
+            const optionCancelados = selectFiltro.querySelector('option[value="cancelados"]');
+            const optionBorrador = selectFiltro.querySelector('option[value="borrador"]');
+            const optionMisInscripciones = selectFiltro.querySelector('option[value="mis-inscripciones"]');
+            const optionMisEventos = selectFiltro.querySelector('option[value="mis-eventos"]');
+
+            const esParticipante = currentUser && currentUser.rol === 'PARTICIPANTE';
+            const puedeGestionar = currentUser && (currentUser.rol === 'ADMINISTRADOR' || currentUser.rol === 'ORGANIZADOR');
+            const puedeVerEstadosInternos = puedeGestionar;
+
+            optionCancelados.hidden = !puedeVerEstadosInternos;
+            optionBorrador.hidden = !puedeVerEstadosInternos;
+            optionMisInscripciones.hidden = !esParticipante;
+            optionMisEventos.hidden = !puedeGestionar;
+
+            if ((filtroActual === 'cancelados' && !puedeVerEstadosInternos)
+                || (filtroActual === 'borrador' && !puedeVerEstadosInternos)
+                || (filtroActual === 'mis-inscripciones' && !esParticipante)
+                || (filtroActual === 'mis-eventos' && !puedeGestionar)) {
+                selectFiltro.value = 'todos';
+                filtroActual = 'todos';
+            }
+        }
+
+        function cumpleFiltroEvento(ev) {
+            const fechaEvento = new Date(ev.fecha);
+            const ahora = new Date();
+
+            switch (filtroActual) {
+                case 'proximos':
+                    return fechaEvento >= ahora && ev.estado !== 'CANCELADO';
+                case 'pasados':
+                    return fechaEvento < ahora;
+                case 'publicados':
+                    return ev.estado === 'PUBLICADO';
+                case 'cancelados':
+                    return ev.estado === 'CANCELADO';
+                case 'borrador':
+                    return ev.estado === 'BORRADOR';
+                case 'mis-inscripciones':
+                    return Boolean(ev.inscrito);
+                case 'mis-eventos':
+                    return Boolean(ev.puedeGestionar);
+                case 'todos':
+                default:
+                    return true;
+            }
+        }
+
+        function getFiltroLabel(filtro) {
+            switch (filtro) {
+                case 'proximos':
+                    return 'Eventos proximos';
+                case 'pasados':
+                    return 'Eventos pasados';
+                case 'publicados':
+                    return 'Eventos publicados';
+                case 'cancelados':
+                    return 'Eventos cancelados';
+                case 'borrador':
+                    return 'Eventos en borrador';
+                case 'mis-inscripciones':
+                    return 'Mis inscripciones';
+                case 'mis-eventos':
+                    return 'Eventos que gestiono';
+                case 'todos':
+                default:
+                    return 'Todos los eventos';
             }
         }
 
