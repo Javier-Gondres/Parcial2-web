@@ -14,6 +14,7 @@ public record EventoDto(
     String tokenQr,
     boolean asistenciaMarcada,
     String creadoPor,
+    String creadoPorFotoBase64,
     boolean puedeGestionar,
     boolean puedeEliminar
 ) {

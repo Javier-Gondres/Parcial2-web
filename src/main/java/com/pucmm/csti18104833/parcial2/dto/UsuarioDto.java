@@ -5,6 +5,7 @@ public record UsuarioDto(
     String usuario,
     String nombre,
     String rol,
-    boolean bloqueado
+    boolean bloqueado,
+    String fotoBase64
 ) {
 }

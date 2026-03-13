@@ -272,7 +272,10 @@
             }
 
             containerAuth.innerHTML = `
-                <span class="text-dark fw-bold me-2">${currentUser.nombre} (${currentUser.rol})</span>
+                <div class="d-flex align-items-center gap-2 me-2">
+                    ${renderAvatar(currentUser.fotoBase64, currentUser.nombre, 42)}
+                    <span class="text-dark fw-bold">${currentUser.nombre} (${currentUser.rol})</span>
+                </div>
                 ${extraButtons}
                 <a href="/logout" class="btn btn-sm btn-outline-danger">Salir</a>
             `;
@@ -306,6 +309,12 @@
             const fechaFormateada = new Date(ev.fecha).toLocaleString();
             const accionesParticipante = isParticipant ? renderAccionesParticipante(ev, cupoLleno) : '';
             const accionesGestion = ev.puedeGestionar ? renderAccionesGestion(ev) : '';
+            const creador = ev.creadoPor ? `
+                <div class="d-flex align-items-center gap-2 mt-3">
+                    ${renderAvatar(ev.creadoPorFotoBase64, ev.creadoPor, 36)}
+                    <div class="small text-muted">Organiza: ${ev.creadoPor}</div>
+                </div>
+            ` : '';
 
             return `
                 <div class="col">
@@ -325,7 +334,7 @@
                                 ${ev.lugar}
                             </h6>
                             <p class="card-text small text-secondary">${ev.descripcion}</p>
-                            ${ev.creadoPor ? `<p class="small text-muted mb-0">Organiza: ${ev.creadoPor}</p>` : ''}
+                            ${creador}
                             ${ev.asistenciaMarcada ? '<span class="badge bg-success mt-2">Asistencia marcada</span>' : ''}
                         </div>
                         <div class="card-footer bg-white border-top-0 pt-0 pb-3">
@@ -363,6 +372,47 @@
                 </div>
                 <button class="btn btn-sm btn-info w-100 text-dark fw-bold" onclick="abrirResumen(${ev.id})">Ver Resumen/Estadisticas</button>
             `;
+        }
+
+        function renderAvatar(fotoBase64, nombre, size) {
+            const safeName = escapeHtml(nombre || 'Usuario');
+            if (fotoBase64) {
+                return `
+                    <img
+                        src="${fotoBase64}"
+                        alt="Foto de perfil de ${safeName}"
+                        title="${safeName}"
+                        class="rounded-circle border object-fit-cover"
+                        style="width: ${size}px; height: ${size}px; object-fit: cover;"
+                    >
+                `;
+            }
+
+            const iniciales = getInitials(nombre);
+            return `
+                <div
+                    class="rounded-circle border bg-primary-subtle text-primary fw-bold d-inline-flex align-items-center justify-content-center"
+                    title="${safeName}"
+                    style="width: ${size}px; height: ${size}px; font-size: ${Math.max(12, Math.floor(size / 3))}px;"
+                >
+                    ${iniciales}
+                </div>
+            `;
+        }
+
+        function getInitials(nombre) {
+            if (!nombre) return 'U';
+            const partes = nombre.trim().split(/\s+/).filter(Boolean).slice(0, 2);
+            return partes.map(parte => parte[0].toUpperCase()).join('');
+        }
+
+        function escapeHtml(value) {
+            return String(value)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
         }
 
         async function inscribirse(eventoId) {

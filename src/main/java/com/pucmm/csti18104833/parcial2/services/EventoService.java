@@ -317,6 +317,7 @@ public class EventoService {
             qrToken,
             asistenciaMarcada,
             evento.getCreadoPor() != null ? evento.getCreadoPor().getNombre() : null,
+            evento.getCreadoPor() != null ? evento.getCreadoPor().getFotoBase64() : null,
             puedeGestionar,
             puedeEliminar
         );

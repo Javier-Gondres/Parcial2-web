@@ -81,7 +81,8 @@ public class AuthService {
             usuario.getUsuario(),
             usuario.getNombre(),
             usuario.getRol().name(),
-            usuario.isBloqueado()
+            usuario.isBloqueado(),
+            usuario.getFotoBase64()
         );
     }
 
