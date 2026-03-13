@@ -6,16 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="estilo.css">
-    <title>Inicio - Programación Web</title>
+    <title>Eventos Académicos PUCMM</title>
 </head>
 
 <body>
-    <header class="header container-fluid py-4 mb-4 border-bottom shadow-sm">
+    <header class="header container-fluid py-4 mb-4 border-bottom shadow-sm bg-light">
         <div class="container d-flex justify-content-between align-items-center">
-            <h1 class="m-0">Programacion Web</h1>
+            <h1 class="m-0 text-primary">Gestión de Eventos</h1>
             <nav id="auth-links" class="nav-links d-none d-md-flex align-items-center flex-wrap gap-2">
+                <!-- Se llenará dinámicamente -->
             </nav>
-
             <div class="d-md-none">
                 <a href="Login.html" class="text-dark fw-bold me-2 small text-decoration-underline">Login</a>
             </div>
@@ -23,429 +23,553 @@
     </header>
 
     <main class="container">
-        <div class="row g-4">
-            <!-- Columna Izquierda: Artículos -->
-            <section class="col-lg-8" id="main-content">
-                <div id="create-article-box" class="articulo mb-4 shadow-sm"
-                    style="display:none; background-color: rgba(29, 76, 106, 0.95);">
-                    <h2>¿Qué quieres compartir hoy?</h2>
-                    <div class="mt-3">
-                        <button class="btn btn-primary btn-lg w-100 fw-bold shadow" data-bs-toggle="modal"
-                            data-bs-target="#modalCrearArticulo">Crear Nueva Publicación</button>
-                    </div>
+        <!-- Panel de acciones rápidas para organizadores/administradores -->
+        <div id="panel-admin-organizador"
+            class="mb-4 p-3 bg-white shadow-sm rounded border-start border-4 border-primary" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <h4 class="m-0">Panel de Control: Eventos</h4>
+                <div>
+                    <button class="btn btn-success me-2 fw-bold" data-bs-toggle="modal"
+                        data-bs-target="#modalEscanearQR">
+                        Escanear QR Asistencia
+                    </button>
+                    <button class="btn btn-primary fw-bold" data-bs-toggle="modal" data-bs-target="#modalCrearEvento">
+                        + Crear Evento
+                    </button>
                 </div>
-                <div id="lista-articulos">
-                    <div class="text-center p-5 text-white">Cargando artículos...</div>
-                </div>
-                <div id="paginacion-container"></div>
-                <div id="error-container" style="display: none;"></div>
-            </section>
-
-            <!-- Columna Derecha: columna de etiquetas -->
-            <aside class="col-lg-4">
-                <div class="sidebar-card shadow-sm">
-                    <h2>Etiquetas</h2>
-                    <div id="lista-etiquetas" class="list-group list-group-flush bg-transparent mt-3">
-                        <div class="text-center text-white opacity-50">Cargando...</div>
-                    </div>
-                </div>
-
-                <div class="sidebar-card shadow-sm mt-4">
-                    <h2>Sobre el Blog</h2>
-                    <p class="small opacity-75 mt-3">Este es un espacio para estudiantes de la PUCMM donde compartimos
-                        conocimientos sobre Programación Web.</p>
-                    <hr class="border-white opacity-25">
-                    <p class="small mb-0" id="user-display">Sesión no iniciada</p>
-                </div>
-            </aside>
+            </div>
         </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 class="fw-bold">Próximos Eventos</h3>
+            <span class="badge bg-secondary p-2" id="vista-filtro">Todos los eventos</span>
+        </div>
+
+        <!-- Layout estilo Lista de tarjetas (Grid Responsiva) -->
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5" id="contenedor-eventos">
+            <div class="col-12 text-center py-5 text-muted">
+                <div class="spinner-border text-primary mb-3" role="status"></div>
+                <p>Cargando eventos académicos disponibles...</p>
+            </div>
+        </div>
+
+        <div id="error-container" style="display: none;"></div>
     </main>
 
-    <footer class="container-fluid py-4 mt-5 border-top text-center opacity-75">
-        <p>2026 Programación Web - ICC-352</p>
+    <footer class="container-fluid py-4 mt-auto border-top text-center text-muted bg-light">
+        <p class="mb-0 fw-bold">2026 Programación Web - ICC-352 | PUCMM</p>
+        <small>Sistema de Gestión de Eventos Académicos</small>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Crear Articulo -->
-    <div class="modal fade text-dark" id="modalCrearArticulo" tabindex="-1" aria-hidden="true">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Librería para Estadísticas/Gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Librería para generar el código QR en el cliente -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <!-- Modal Crear/Editar Evento-->
+    <div class="modal fade text-dark" id="modalCrearEvento" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Nueva Publicación</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold">Gestión de Evento</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div id="modal-error" class="alert alert-danger alert-dismissible fade show d-none" role="alert"></div>
-                    <form id="formCrearArticulo">
+                    <form id="formCrearEvento">
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Título</label>
-                            <input type="text" class="form-control" id="tituloArticulo" required>
+                            <label class="form-label fw-bold">Título del Evento</label>
+                            <input type="text" class="form-control" id="tituloEvento" placeholder="Ej: Congreso de IA"
+                                required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Contenido</label>
-                            <textarea class="form-control" id="cuerpoArticulo" rows="6" required></textarea>
+                            <label class="form-label fw-bold">Descripción</label>
+                            <textarea class="form-control" id="descEvento" rows="4"
+                                placeholder="Breve detalle sobre el evento..." required></textarea>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Etiquetas</label>
-                            <input type="text" class="form-control" id="etiquetasArticulo"
-                                placeholder="ej: Java, Web, Tutorial">
-                            <small class="text-muted">Separadas por coma</small>
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-bold">Fecha y Hora</label>
+                                <input type="datetime-local" class="form-control" id="fechaEvento" required>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-bold">Lugar</label>
+                                <input type="text" class="form-control" id="lugarEvento" placeholder="Ej: Auditorio 1"
+                                    required>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-bold">Cupo Máximo</label>
+                                <input type="number" class="form-control" id="cupoEvento" min="1" placeholder="Ej: 100"
+                                    required>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-bold">Estado</label>
+                                <select class="form-select" id="estadoEvento" required>
+                                    <option value="PUBLICADO">Publicado</option>
+                                    <option value="BORRADOR">Borrador</option>
+                                    <option value="CANCELADO">Cancelado</option>
+                                </select>
+                            </div>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <input type="hidden" id="editArticuloId" value="">
+                    <input type="hidden" id="editEventoId" value="">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" id="btnGuardarArticulo" class="btn btn-primary"
-                        onclick="guardarArticulo()">Publicar</button>
+                    <button type="button" class="btn btn-primary fw-bold" onclick="guardarEvento()">Guardar
+                        Evento</button>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Modal QR de Inscripción -->
+    <div class="modal fade" id="modalMiQR" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title">Tu Entrada QR</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <p class="small text-muted mb-3">Presenta este código al organizador el día del evento.</p>
+                    <div id="qr-container" class="d-flex justify-content-center bg-white p-3 border rounded shadow-sm">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Resumen de Estadísticas del Evento -->
+    <div class="modal fade" id="modalEstadisticas" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-dark">
+                    <h5 class="modal-title fw-bold">Resumen y Estadísticas del Evento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body bg-light">
+                    <div class="row text-center mb-4 g-3">
+                        <div class="col-md-4">
+                            <div class="card shadow-sm border-0 h-100">
+                                <div class="card-body">
+                                    <h6 class="text-muted text-uppercase mb-2">Total Inscritos</h6>
+                                    <h2 class="display-5 fw-bold text-primary" id="stat-inscritos">0</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card shadow-sm border-0 h-100">
+                                <div class="card-body">
+                                    <h6 class="text-muted text-uppercase mb-2">Total Asistentes</h6>
+                                    <h2 class="display-5 fw-bold text-success" id="stat-asistentes">0</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card shadow-sm border-0 h-100">
+                                <div class="card-body">
+                                    <h6 class="text-muted text-uppercase mb-2">Porcentaje Asistencia</h6>
+                                    <h2 class="display-5 fw-bold text-info" id="stat-porcentaje">0%</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gráficos -->
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="card shadow-sm border-0 h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title text-center text-muted fw-bold">Inscripciones por Día</h6>
+                                    <canvas id="chartInscripciones"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card shadow-sm border-0 h-100">
+                                <div class="card-body">
+                                    <h6 class="card-title text-center text-muted fw-bold">Asistencia por Hora (Día
+                                        Evento)</h6>
+                                    <canvas id="chartAsistencia"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Escanear QR -->
+    <div class="modal fade" id="modalEscanearQR" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header text-white bg-success">
+                    <h5 class="modal-title fw-bold">Control de Asistencia</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <p class="text-muted">Enfoque el código QR del participante aquí.</p>
+                    <div class="p-4 bg-light mb-3 rounded border border-2 border-dashed border-success">
+                        <br><br>
+                        <input type="text" id="simuladorQR" class="form-control text-center"
+                            placeholder="ID/Token simulado de prueba">
+                    </div>
+                    <button class="btn btn-success w-100 fw-bold" onclick="marcarAsistencia()">Validar / Marcar
+                        Asistencia</button>
+                    <div id="resultado-scanner" class="mt-3 fw-bold"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Funci -->
     <script>
         let currentUser = null;
+        let chartInstanciaInscriptos = null;
+        let chartInstanciaAsistencia = null;
 
         document.addEventListener("DOMContentLoaded", async () => {
-            await loadUser();
-            await loadArticulos();
-            await loadEtiquetas();
+            await cargarUsuario();
+            await cargarEventos();
         });
 
-        async function loadUser() {
+        async function cargarUsuario() {
             try {
                 const res = await fetch('/api/usuario');
-                if (res.status === 200) {
+                if (res.ok) {
                     currentUser = await res.json();
                     renderUserUI();
-                } else if (res.status === 204) {
-                    currentUser = null;
-                    renderGuestUI();
                 } else {
                     currentUser = null;
-                    renderGuestUI();
                 }
-            } catch (e) { console.error(e); }
+            } catch (error) {
+                console.error("Error obteniendo usuario actual:", error);
+            }
         }
 
         function renderUserUI() {
-            const nombre = currentUser.nombre || currentUser.usuario;
-            const fotoSrc = (currentUser.fotoBase64 && currentUser.fotoBase64.trim() !== '') 
-                ? currentUser.fotoBase64 
-                : null;
-            const fotoHTML = fotoSrc 
-                ? `<img src="${fotoSrc}" alt="Foto de perfil" class="rounded-circle me-2" style="width:32px;height:32px;object-fit:cover;vertical-align:middle;">` 
-                : '';
-            let linksHTML = `<span class="text-dark me-3 fw-bold d-inline-flex align-items-center">${fotoHTML} Hola, ${nombre}</span>`;
+            const containerAuth = document.getElementById('auth-links');
+            if (currentUser) {
+                let extraButtons = '';
+                if (currentUser.rol === 'ADMINISTRADOR') {
+                    extraButtons += '<a href="GestionUsuarios.html" class="btn btn-sm btn-outline-primary">Gestión Usuarios</a>';
+                }
 
-            if (currentUser.administrador) {
-                linksHTML += `<a href="/CrearUsuario.html" class="btn btn-outline-info fw-bold btn-sm me-2">Crear Usuario</a>`;
-            }
+                containerAuth.innerHTML = `
+                    <span class="text-dark fw-bold me-3">${currentUser.nombre} (${currentUser.rol})</span>
+                    ${extraButtons}
+                    <a href="/logout" class="btn btn-sm btn-outline-danger">Salir</a>
+                `;
 
-            linksHTML += `<a href="/logout" class="btn btn-outline-danger fw-bold btn-sm">Salir</a>`;
-
-            document.getElementById('auth-links').innerHTML = linksHTML;
-
-            const userDisplay = document.getElementById('user-display');
-            if (userDisplay) {
-                const rol = currentUser.administrador ? "Administrador" : (currentUser.autor ? "Autor" : "Lectura");
-                const sidebarFoto = fotoSrc 
-                    ? `<img src="${fotoSrc}" alt="Foto" class="rounded-circle me-2" style="width:28px;height:28px;object-fit:cover;vertical-align:middle;">` 
-                    : '';
-                userDisplay.innerHTML = `${sidebarFoto} Sesión iniciada como: <strong>${rol}</strong>`;
-            }
-
-            if (currentUser.administrador || currentUser.autor) {
-                const box = document.getElementById('create-article-box');
-                if (box) box.style.display = "block";
+                if (currentUser.rol === 'ADMINISTRADOR' || currentUser.rol === 'ORGANIZADOR') {
+                    document.getElementById('panel-admin-organizador').style.display = 'block';
+                }
             }
         }
 
-        function renderGuestUI() {
-            document.getElementById('auth-links').innerHTML = `
-                <a href="Login.html" class="btn btn-outline-dark fw-bold me-2">Login</a>
-                <a href="Registro.html" class="btn btn-dark fw-bold">Registro</a>`;
-            const userDisplay = document.getElementById('user-display');
-            if (userDisplay) userDisplay.innerHTML = `Sesión no iniciada (Invitado)`;
-        }
-
-        let paginaActual = 1;
-        let filtroEtiquetaActual = null;
-
-        async function loadArticulos(filtroEtiqueta = null, pagina = 1) {
-            filtroEtiquetaActual = filtroEtiqueta;
-            paginaActual = pagina;
-            const container = document.getElementById('lista-articulos');
-            const titleEl = document.querySelector("#main-content h2");
-            let url = '/api/articulos?pagina=' + pagina;
-            if (filtroEtiqueta) {
-                url += '&etiqueta=' + encodeURIComponent(filtroEtiqueta);
-            }
-
+        async function cargarEventos() {
+            const container = document.getElementById('contenedor-eventos');
             try {
-                const res = await fetch(url);
-                const data = await res.json();
-                const articulos = data.articulos || [];
-                const total = data.total || 0;
-                const totalPaginas = data.totalPaginas || 1;
+                const res = await fetch('/api/eventos');
+                if (!res.ok) throw new Error("No se pudo cargar la lista de eventos");
 
-                if (articulos.length === 0) {
-                    container.innerHTML = '<div class="alert alert-info">No hay artículos publicados ' + (filtroEtiqueta ? 'con esta etiqueta.' : 'aún.') + '</div>';
-                    if (filtroEtiqueta) container.innerHTML += '<button class="btn btn-link" onclick="loadArticulos()">Ver todos</button>';
-                    document.getElementById('paginacion-container').innerHTML = '';
+                const eventos = await res.json();
+                if (eventos.length === 0) {
+                    container.innerHTML = '<div class="col-12 text-center py-5 text-muted"><p>No hay eventos registrados actualmente.</p></div>';
                     return;
                 }
 
                 let html = '';
-                if (filtroEtiqueta) {
-                    html += `<div class="mb-3 d-flex justify-content-between align-items-center text-white">
-                        <h3>Etiqueta: <span class="badge bg-info text-dark">${filtroEtiqueta}</span></h3>
-                        <button class="btn btn-sm btn-outline-light" onclick="loadArticulos(null, 1)">Borrar filtro</button>
-                    </div>`;
-                }
+                eventos.forEach(ev => {
+                    const cupoLleno = ev.inscritos >= ev.cupo;
+                    const canManage = currentUser && (currentUser.rol === 'ADMINISTRADOR' || currentUser.rol === 'ORGANIZADOR');
+                    const isParticipant = currentUser && currentUser.rol === 'PARTICIPANTE';
 
-                html += articulos.map(a => `
-                    <article class="articulo shadow-sm" id="art-${a.id}">
-                        <div class="d-flex justify-content-between">
-                            <h2>${a.titulo}</h2>
-                            ${canEdit(a) ? `
-                            <div>
-                                <button class="btn btn-sm btn-info me-1 text-white" onclick="abrirEdicion(${a.id})">Editar</button>
-                                <button class="btn btn-sm btn-danger" onclick="eliminarArticulo(${a.id})">Borrar</button>
-                            </div>` : ''}
-                        </div>
-                        <p class="mt-3">${a.cuerpo.length > 70 ? a.cuerpo.substring(0, 70) + '...' : a.cuerpo}</p>
-                        
-                        <div class="mb-2">
-                             ${(a.misEtiquetas || []).map(t => `<span class="badge bg-secondary me-1" style="border:1px solid white; cursor:pointer;" onclick="filtrarPorEtiqueta('${t.etiqueta}')">${t.etiqueta}</span>`).join('')}
-                        </div>
+                    html += `
+                    <div class="col">
+                        <div class="card h-100 shadow-sm border-0">
+                            <div class="card-body">
+                                <div class="mb-2 float-end">
+                                    <span class="badge ${ev.estado === 'PUBLICADO' ? 'bg-success' : (ev.estado === 'CANCELADO' ? 'bg-danger' : 'bg-secondary')} me-1">
+                                        ${ev.estado}
+                                    </span>
+                                    <span class="badge ${cupoLleno ? 'bg-danger' : 'bg-primary'}">
+                                        ${ev.inscritos} / ${ev.cupo}
+                                    </span>
+                                </div>
+                                <h5 class="card-title fw-bold text-dark">${ev.titulo}</h5>
+                                <h6 class="card-subtitle mb-3 text-muted">
+                                    ${new Date(ev.fecha).toLocaleString()} <br>
+                                    ${ev.lugar}
+                                </h6>
+                                <p class="card-text small text-secondary">${ev.descripcion || ev.desc}</p>
+                            </div>
+                            <div class="card-footer bg-white border-top-0 pt-0 pb-3">
+                                
+                                ${isParticipant ? `
+                                    <button class="btn btn-sm ${cupoLleno ? 'btn-secondary disabled' : 'btn-success'} w-100 mb-2 fw-bold" onclick="inscribirse(${ev.id})">
+                                        ${cupoLleno ? 'Cupo Lleno' : 'Inscribirse al Evento'}
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary w-100 mb-2 fw-bold" onclick="generarYMostrarQR(${ev.id}, '${currentUser.id || currentUser.usuario}')">Ver Mi Entrada (QR)</button>
+                                    <button class="btn btn-sm btn-outline-danger w-100" onclick="cancelarInscripcion(${ev.id})">Cancelar Inscripción</button>
+                                ` : ''}
 
-                        <div class="d-flex justify-content-between align-items-center mt-4">
-                            <span class="badge bg-light text-dark opacity-75">Por: ${a.autor.nombre || a.autor.usuario} - ${a.fecha || ''}</span>
-                            <a href="/ver-articulo/${a.id}" class="btn btn-outline-light btn-sm">Leer más →</a>
+                                ${canManage ? `
+                                    <div class="d-flex gap-2 mb-2">
+                                        <button class="btn btn-sm btn-outline-primary flex-fill fw-bold" onclick="editarEvento(${ev.id})">Editar</button>
+                                        <button class="btn btn-sm btn-outline-danger flex-fill fw-bold" onclick="eliminarEvento(${ev.id})">Borrar</button>
+                                    </div>
+                                    <button class="btn btn-sm btn-info w-100 text-dark fw-bold" onclick="abrirResumen(${ev.id})">Ver Resumen/Estadísticas</button>
+                                ` : ''}
+                            </div>
                         </div>
-                    </article>
-                `).join('');
+                    </div>
+                    `;
+                });
 
                 container.innerHTML = html;
-
-                // Paginación
-                let pagHtml = '<nav class="mt-4"><ul class="pagination justify-content-center flex-wrap">';
-                pagHtml += `<li class="page-item ${pagina === 1 ? 'disabled' : ''}"><a class="page-link" href="#" onclick="loadArticulos(filtroEtiquetaActual, ${pagina - 1}); return false;">Anterior</a></li>`;
-                for (let i = 1; i <= totalPaginas; i++) {
-                    if (i === pagina) {
-                        pagHtml += `<li class="page-item active"><span class="page-link">${i}</span></li>`;
-                    } else {
-                        pagHtml += `<li class="page-item"><a class="page-link" href="#" onclick="loadArticulos(filtroEtiquetaActual, ${i}); return false;">${i}</a></li>`;
-                    }
-                }
-                pagHtml += `<li class="page-item ${pagina >= totalPaginas ? 'disabled' : ''}"><a class="page-link" href="#" onclick="loadArticulos(filtroEtiquetaActual, ${pagina + 1}); return false;">Siguiente</a></li>`;
-                pagHtml += '</ul></nav>';
-                document.getElementById('paginacion-container').innerHTML = pagHtml;
-
-            } catch (e) {
-                console.error('Error cargando artículos:', e);
-                container.innerHTML = `
-                    <div class="alert alert-danger">
-                        <strong>Error al cargar artículos</strong><br>
-                        No se pudo conectar con el servidor. Por favor recarga la página o intenta más tarde.
-                        <button class="btn btn-sm btn-outline-danger mt-2" onclick="loadArticulos()">Reintentar</button>
-                    </div>
-                `;
+            } catch (error) {
+                console.error(error);
+                container.innerHTML = '<div class="col-12 text-center py-5 text-danger"><p>Error de conexión al cargar los eventos.</p></div>';
             }
         }
 
-        async function loadEtiquetas() {
-            const container = document.getElementById('lista-etiquetas');
+        async function inscribirse(eventoId) {
             try {
-                const res = await fetch('/api/etiquetas');
-                const etiquetas = await res.json();
-
-                if (etiquetas.length === 0) {
-                    container.innerHTML = '<div class="text-center text-white opacity-50">Sin etiquetas</div>';
-                    return;
-                }
-
-                container.innerHTML = etiquetas.map(t => `
-                    <div class="list-group-item bg-transparent text-white border-white border-opacity-10 py-2" 
-                         style="cursor:pointer;" onclick="filtrarPorEtiqueta('${t.etiqueta}')">
-                            ${t.etiqueta}
-                    </div>
-                `).join('');
-
-            } catch (e) {
-                container.innerHTML = '<div class="text-center text-danger">Error</div>';
-            }
-        }
-
-        function filtrarPorEtiqueta(tag) {
-            loadArticulos(tag, 1);
-        }
-
-        function canEdit(articulo) {
-            if (!currentUser) return false;
-            if (currentUser.administrador) return true;
-            if (currentUser.autor && articulo.autor && articulo.autor.usuario === currentUser.usuario) return true;
-            return false;
-        }
-
-        async function eliminarArticulo(id) {
-            let tituloArticulo = "este artículo";
-            try {
-                const res = await fetch('/api/articulos/' + id);
+                const res = await fetch(`/api/eventos/${eventoId}/inscribir`, { method: 'POST' });
                 if (res.ok) {
-                    const art = await res.json();
-                    tituloArticulo = art.titulo || "este artículo";
-                }
-            } catch (e) {
-                console.error("Error al obtener artículo:", e);
-            }
-
-            const confirmar = confirm(`¿Estás seguro de eliminar "${tituloArticulo}"?\n\nEsta acción no se puede deshacer.`);
-            if (!confirmar) return;
-
-            try {
-                const res = await fetch('/api/articulos/' + id, { method: 'DELETE' });
-                if (res.ok) {
-                    mostrarMensaje('success', 'Artículo eliminado exitosamente');
-                    await loadArticulos();
-                    await loadEtiquetas();
+                    alert("¡Inscripción exitosa!");
+                    cargarEventos();
                 } else {
-                    const status = res.status;
-                    let mensaje = 'Error al eliminar el artículo.';
-                    if (status === 403) {
-                        mensaje = 'No tienes permisos para eliminar este artículo.';
-                    } else if (status === 404) {
-                        mensaje = 'El artículo no existe o ya fue eliminado.';
-                    } else if (status === 401) {
-                        mensaje = 'Debes iniciar sesión para realizar esta acción.';
-                    }
-                    mostrarMensaje('error', mensaje);
+                    const msg = await res.text();
+                    alert("Error al intentar inscribirse: " + msg);
                 }
-            } catch (e) {
-                mostrarMensaje('error', 'Error de conexión. Por favor verifica tu internet e intenta de nuevo.');
+            } catch (error) {
+                console.error(error);
+                alert("Error de conexión.");
             }
         }
 
-        function mostrarErrorEnModal(mensaje) {
-            const modalError = document.getElementById('modal-error');
-            modalError.innerHTML = `<strong>✗</strong> ${mensaje} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>`;
-            modalError.classList.remove('d-none');
-        }
-
-        function mostrarMensaje(tipo, mensaje) {
-            const container = document.getElementById('error-container');
-            const alertClass = tipo === 'success' ? 'alert-success' : 'alert-danger';
-            const icon = tipo === 'success' ? '✓' : '✗';
-
-            container.innerHTML = `
-                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
-                    <strong>${icon}</strong> ${mensaje}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            `;
-            container.style.display = 'block';
-
-            setTimeout(() => {
-                const alert = container.querySelector('.alert');
-                if (alert) {
-                    const bsAlert = new bootstrap.Alert(alert);
-                    bsAlert.close();
-                }
-            }, 5000);
-        }
-
-        async function abrirEdicion(id) {
+        async function cancelarInscripcion(eventoId) {
+            if (!confirm("¿Está seguro de cancelar su inscripción a este evento antes de la fecha?")) return;
             try {
-                const res = await fetch('/api/articulos/' + id);
+                const res = await fetch(`/api/eventos/${eventoId}/cancelar`, { method: 'POST' });
                 if (res.ok) {
-                    const a = await res.json();
-                    document.getElementById('editArticuloId').value = a.id;
-                    document.getElementById('tituloArticulo').value = a.titulo;
-                    document.getElementById('cuerpoArticulo').value = a.cuerpo;
-                    document.getElementById('etiquetasArticulo').value = (a.misEtiquetas || []).map(t => t.etiqueta).join(', ');
-
-                    document.querySelector('#modalCrearArticulo .modal-title').innerText = "Editar Publicación";
-                    document.getElementById('btnGuardarArticulo').innerText = "Guardar Cambios";
-
-                    const modal = new bootstrap.Modal(document.getElementById('modalCrearArticulo'));
-                    modal.show();
+                    alert("Inscripción cancelada.");
+                    cargarEventos();
+                } else {
+                    alert("Error al cancelar la inscripción.");
                 }
-            } catch (e) {
-                console.error('Error al cargar artículo para editar:', e);
-                mostrarMensaje('error', 'Error al cargar los datos del artículo. Por favor intenta de nuevo.');
+            } catch (error) {
+                console.error(error);
             }
         }
 
-        document.getElementById('modalCrearArticulo').addEventListener('hidden.bs.modal', function () {
-            document.getElementById('editArticuloId').value = "";
-            document.getElementById('formCrearArticulo').reset();
-            document.getElementById('modal-error').classList.add('d-none');
-            document.querySelector('#modalCrearArticulo .modal-title').innerText = "Nueva Publicación";
-            document.getElementById('btnGuardarArticulo').innerText = "Publicar";
-        });
+        function generarYMostrarQR(eventoId, usuarioId) {
+            const qrContainer = document.getElementById('qr-container');
+            qrContainer.innerHTML = '';
 
-        async function guardarArticulo() {
-            const id = document.getElementById('editArticuloId').value;
-            const titulo = document.getElementById('tituloArticulo').value;
-            const cuerpo = document.getElementById('cuerpoArticulo').value;
-            const etiquetas = document.getElementById('etiquetasArticulo').value;
+            const tokenValidacion = btoa(eventoId + ':' + usuarioId + ':token_generado');
+            const payload = JSON.stringify({ eventoId: eventoId, usuarioId: usuarioId, token: tokenValidacion });
 
-            if (!titulo || !titulo.trim()) {
-                mostrarErrorEnModal('El título es obligatorio.');
+            new QRCode(qrContainer, {
+                text: payload,
+                width: 220,
+                height: 220,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            const modal = new bootstrap.Modal(document.getElementById('modalMiQR'));
+            modal.show();
+        }
+
+        async function abrirResumen(eventoId) {
+            try {
+                const res = await fetch(`/api/eventos/${eventoId}/estadisticas`);
+                if (!res.ok) throw new Error("Fallo en la consulta de estadísticas");
+                const stats = await res.json();
+
+                document.getElementById('stat-inscritos').innerText = stats.totalInscritos || 0;
+                document.getElementById('stat-asistentes').innerText = stats.totalAsistentes || 0;
+                document.getElementById('stat-porcentaje').innerText = (stats.porcentajeAsistencia || 0) + "%";
+
+                const modal = new bootstrap.Modal(document.getElementById('modalEstadisticas'));
+                modal.show();
+
+                setTimeout(() => dibujarGraficosEstadisticas(stats), 300);
+            } catch (error) {
+                console.error(error);
+                alert("Error técnico al recuperar estadísticas del evento.");
+            }
+        }
+
+        function dibujarGraficosEstadisticas(stats) {
+            if (chartInstanciaInscriptos) chartInstanciaInscriptos.destroy();
+            if (chartInstanciaAsistencia) chartInstanciaAsistencia.destroy();
+
+            const ctxInsc = document.getElementById('chartInscripciones').getContext('2d');
+            chartInstanciaInscriptos = new Chart(ctxInsc, {
+                type: 'bar',
+                data: {
+                    labels: stats.fechas || [],
+                    datasets: [{
+                        label: 'Número de Inscripciones',
+                        data: stats.inscripcionesPorDia || [],
+                        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1,
+                        borderRadius: 3
+                    }]
+                },
+                options: { responsive: true }
+            });
+
+            const ctxAsist = document.getElementById('chartAsistencia').getContext('2d');
+            chartInstanciaAsistencia = new Chart(ctxAsist, {
+                type: 'line',
+                data: {
+                    labels: stats.horas || [],
+                    datasets: [{
+                        label: 'Asistencia Confirmada (Acumulada)',
+                        data: stats.asistenciaPorHora || [],
+                        backgroundColor: 'rgba(75, 192, 192, 0.4)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: { responsive: true }
+            });
+        }
+
+        async function marcarAsistencia() {
+            const val = document.getElementById('simuladorQR').value;
+            const resContainer = document.getElementById('resultado-scanner');
+
+            if (!val) {
+                resContainer.innerHTML = '<div class="alert alert-danger">El código leído está vacío.</div>';
                 return;
             }
-            if (!cuerpo || !cuerpo.trim()) {
-                mostrarErrorEnModal('El contenido del artículo es obligatorio.');
+
+            try {
+                const res = await fetch('/api/eventos/asistencia', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: val
+                });
+
+                if (res.ok) {
+                    resContainer.innerHTML = `
+                    <div class="alert alert-success d-flex align-items-center" role="alert">
+                      <div>¡Asistencia registrada exitosamente!</div>
+                    </div>`;
+                } else {
+                    const msg = await res.text();
+                    resContainer.innerHTML = `
+                    <div class="alert alert-warning d-flex align-items-center" role="alert">
+                      <div>Aviso: ${msg}</div>
+                    </div>`;
+                }
+            } catch (error) {
+                console.error(error);
+                resContainer.innerHTML = '<div class="alert alert-danger">Error conectando con el servidor.</div>';
+            }
+
+            setTimeout(() => { resContainer.innerHTML = ''; }, 4000);
+        }
+
+        async function editarEvento(id) {
+            try {
+                const res = await fetch(`/api/eventos/${id}`);
+                if (!res.ok) throw new Error("Error técnico obteniendo información a editar");
+
+                const evento = await res.json();
+                document.getElementById('editEventoId').value = evento.id;
+                document.getElementById('tituloEvento').value = evento.titulo;
+                document.getElementById('descEvento').value = evento.descripcion || evento.desc || "";
+
+                if (evento.fecha) {
+                    const localDate = new Date(evento.fecha);
+                    localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
+                    document.getElementById('fechaEvento').value = localDate.toISOString().slice(0, 16);
+                }
+
+                document.getElementById('lugarEvento').value = evento.lugar;
+                document.getElementById('cupoEvento').value = evento.cupo;
+                document.getElementById('estadoEvento').value = evento.estado || "PUBLICADO";
+
+                document.querySelector('#modalCrearEvento .modal-title').innerText = "Editar Evento";
+                const modal = new bootstrap.Modal(document.getElementById('modalCrearEvento'));
+                modal.show();
+            } catch (error) {
+                console.error(error);
+                alert("Ocurrió un error consultando los datos del evento al servidor.");
+            }
+        }
+
+        async function eliminarEvento(id) {
+            if (!confirm("¿Seguro que desea eliminar/cancelar completamente este evento?")) return;
+            try {
+                const res = await fetch(`/api/eventos/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    cargarEventos();
+                } else {
+                    alert("No se pudo eliminar el evento. Verifica tus permisos.");
+                }
+            } catch (error) {
+                console.error(error);
+                alert("Error de red.");
+            }
+        }
+
+        async function guardarEvento() {
+            const formObj = document.getElementById('formCrearEvento');
+            if (!formObj.checkValidity()) {
+                formObj.reportValidity();
                 return;
             }
+
+            const idObj = document.getElementById('editEventoId').value;
+            const isEdit = idObj !== "";
 
             const payload = {
-                titulo: titulo,
-                cuerpo: cuerpo,
-                etiquetas: etiquetas
+                titulo: document.getElementById('tituloEvento').value,
+                descripcion: document.getElementById('descEvento').value,
+                fecha: document.getElementById('fechaEvento').value,
+                lugar: document.getElementById('lugarEvento').value,
+                cupo: parseInt(document.getElementById('cupoEvento').value),
+                estado: document.getElementById('estadoEvento').value
             };
 
-            const url = id ? '/api/articulos/' + id : '/api/articulos';
-            const method = id ? 'PUT' : 'POST';
+            const targetUrl = isEdit ? `/api/eventos/${idObj}` : '/api/eventos';
+            const reqMethod = isEdit ? 'PUT' : 'POST';
 
             try {
-                const res = await fetch(url, {
-                    method: method,
+                const res = await fetch(targetUrl, {
+                    method: reqMethod,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+
                 if (res.ok) {
-                    const modalEl = document.getElementById('modalCrearArticulo');
-                    const modal = bootstrap.Modal.getInstance(modalEl);
-                    if (modal) modal.hide();
-
-                    document.getElementById('formCrearArticulo').reset();
-                    document.getElementById('editArticuloId').value = "";
-
-                    await loadArticulos();
-                    await loadEtiquetas();
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('modalCrearEvento'));
+                    modal.hide();
+                    formObj.reset();
+                    document.getElementById('editEventoId').value = "";
+                    cargarEventos();
                 } else {
-                    const status = res.status;
-                    let msg = await res.text();
-                    let mensaje = 'Error al guardar el artículo.';
-
-                    if (status === 400) {
-                        mensaje = (msg && msg.includes('duplicado')) ? 'El artículo ya existe.' : (msg || 'El artículo ya existe o hay un problema con los datos.');
-                    } else if (status === 403) {
-                        mensaje = 'No tienes permisos para crear o editar artículos.';
-                    } else if (status === 401) {
-                        mensaje = 'Debes iniciar sesión para realizar esta acción.';
-                    } else {
-                        mensaje = msg || `Error del servidor (${status}).`;
-                    }
-
-                    mostrarErrorEnModal(mensaje);
+                    const msg = await res.text();
+                    alert("Problema al guardar: " + msg);
                 }
-            } catch (e) {
-                console.error('Error al guardar artículo:', e);
-                mostrarErrorEnModal('Error de conexión. Por favor verifica tu internet e intenta de nuevo.');
+            } catch (error) {
+                console.error(error);
+                alert("Error conectando con el servidor para guardar.");
             }
         }
     </script>

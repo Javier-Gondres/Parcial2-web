@@ -16,9 +16,11 @@
             border-left: 3px solid #ff6b6b;
             display: none;
         }
+
         .error-message.show {
             display: block;
         }
+
         .success-message {
             color: #51cf66;
             background: rgba(81, 207, 102, 0.1);
@@ -28,31 +30,42 @@
             border-left: 3px solid #51cf66;
             display: none;
         }
+
         .success-message.show {
             display: block;
         }
+
         .password-strength {
             font-size: 0.85em;
             margin-top: 5px;
         }
-        .password-strength.weak { color: #ff6b6b; }
-        .password-strength.medium { color: #ffd93d; }
-        .password-strength.strong { color: #51cf66; }
+
+        .password-strength.weak {
+            color: #ff6b6b;
+        }
+
+        .password-strength.medium {
+            color: #ffd93d;
+        }
+
+        .password-strength.strong {
+            color: #51cf66;
+        }
     </style>
 </head>
 
 <body>
     <div class="form-container-simple">
         <h1>Crea tu cuenta</h1>
-        
+
         <div id="errorMessage" class="error-message"></div>
         <div id="successMessage" class="success-message"></div>
-        
+
         <form id="registroForm" action="/Registro" method="post" onsubmit="return validarFormulario(event)">
             <div class="form-group-simple">
                 <label for="usuario">Usuario</label>
                 <input type="text" id="usuario" name="usuario" placeholder="Nombre de usuario" required>
-                <small style="color: rgba(255,255,255,0.7); font-size: 0.85em;">Mínimo 3 caracteres</small>
+                <small style="color: rgba(2, 2, 2, 0.7); font-size: 0.85em;">Mínimo 3 caracteres</small>
             </div>
             <div class="form-group-simple">
                 <label for="nombre">Nombre Completo</label>
@@ -61,8 +74,8 @@
 
             <div class="form-group-simple">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" placeholder="Mínimo 6 caracteres" required 
-                       minlength="6" oninput="validarPassword()">
+                <input type="password" id="password" name="password" placeholder="Mínimo 6 caracteres" required
+                    minlength="6" oninput="validarPassword()">
                 <div id="passwordStrength" class="password-strength"></div>
             </div>
             <div class="form-group-simple">
@@ -73,10 +86,12 @@
             </div>
             <div class="form-group-simple">
                 <label for="fotoPerfil">Foto de perfil (opcional)</label>
-                <input type="file" id="fotoPerfil" name="fotoPerfil" accept="image/*" onchange="previewFotoPerfil(this)">
+                <input type="file" id="fotoPerfil" name="fotoPerfil" accept="image/*"
+                    onchange="previewFotoPerfil(this)">
                 <input type="hidden" name="fotoBase64" id="fotoBase64" value="">
                 <div id="fotoPerfilPreview" class="mt-2" style="display:none;">
-                    <img id="fotoPerfilPreviewImg" src="" alt="Vista previa" style="max-width: 80px; max-height: 80px; border-radius: 50%; object-fit: cover;">
+                    <img id="fotoPerfilPreviewImg" src="" alt="Vista previa"
+                        style="max-width: 80px; max-height: 80px; border-radius: 50%; object-fit: cover;">
                 </div>
             </div>
             <button type="submit" class="btn-simple">Registrarse</button>
@@ -84,7 +99,7 @@
 
         <div style="margin-top: 20px;">
             <p><a href="Login.html" style="color: var(--accent-blue);">Inicia sesión</a></p>
-            <a href="Inicio.html" style="color: white; opacity: 0.7; font-size: 0.9rem;">Volver al inicio</a>
+            <a href="Inicio.html" style="color: rgb(0, 0, 0); opacity: 0.7; font-size: 0.9rem;">Volver al inicio</a>
         </div>
     </div>
 
@@ -104,13 +119,13 @@
         function validarPassword() {
             const password = document.getElementById('password').value;
             const strengthDiv = document.getElementById('passwordStrength');
-            
+
             if (password.length === 0) {
                 strengthDiv.textContent = '';
                 strengthDiv.className = 'password-strength';
                 return;
             }
-            
+
             if (password.length < 6) {
                 strengthDiv.textContent = 'Contraseña débil (mínimo 6 caracteres)';
                 strengthDiv.className = 'password-strength weak';
@@ -127,12 +142,12 @@
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
             const confirmDiv = document.getElementById('confirmMessage');
-            
+
             if (confirmPassword.length === 0) {
                 confirmDiv.textContent = '';
                 return;
             }
-            
+
             if (password === confirmPassword) {
                 confirmDiv.textContent = '✓ Las contraseñas coinciden';
                 confirmDiv.style.color = '#51cf66';
@@ -162,7 +177,7 @@
                 return;
             }
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = function (e) {
                 fotoBase64Registro = e.target.result;
                 hidden.value = fotoBase64Registro;
                 img.src = fotoBase64Registro;
@@ -177,31 +192,31 @@
             const password = document.getElementById('password').value;
             const confirmPassword = document.getElementById('confirmPassword').value;
             const errorDiv = document.getElementById('errorMessage');
-            
+
             errorDiv.classList.remove('show');
             errorDiv.textContent = '';
-            
+
             if (usuario.length < 3) {
                 errorDiv.textContent = 'El usuario debe tener al menos 3 caracteres.';
                 errorDiv.classList.add('show');
                 event.preventDefault();
                 return false;
             }
-            
+
             if (password.length < 6) {
                 errorDiv.textContent = 'La contraseña debe tener al menos 6 caracteres.';
                 errorDiv.classList.add('show');
                 event.preventDefault();
                 return false;
             }
-            
+
             if (password !== confirmPassword) {
                 errorDiv.textContent = 'Las contraseñas no coinciden.';
                 errorDiv.classList.add('show');
                 event.preventDefault();
                 return false;
             }
-            
+
             return true;
         }
     </script>
