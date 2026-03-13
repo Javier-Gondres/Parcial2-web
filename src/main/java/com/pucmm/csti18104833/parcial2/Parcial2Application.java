@@ -3,6 +3,7 @@ package com.pucmm.csti18104833.parcial2;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.pucmm.csti18104833.parcial2.bootstrap.DatabaseBootstrap;
+import com.pucmm.csti18104833.parcial2.dto.ActualizarPerfilRequest;
 import com.pucmm.csti18104833.parcial2.dto.CambioBloqueoRequest;
 import com.pucmm.csti18104833.parcial2.dto.CambioRolRequest;
 import com.pucmm.csti18104833.parcial2.dto.EventoRequest;
@@ -33,7 +34,7 @@ public class Parcial2Application {
         UsuarioService usuarioService = new UsuarioService(usuarioRepository, authService);
         EventoService eventoService = new EventoService(eventoRepository, inscripcionRepository);
 
-        Javalin app = Javalin.create(config -> {
+        Javalin.create(config -> {
             config.router.ignoreTrailingSlashes = true;
             config.http.generateEtags = true;
             config.http.maxRequestSize = 15L * 1024 * 1024; //15 mb
@@ -102,6 +103,12 @@ public class Parcial2Application {
                     return;
                 }
                 ctx.json(authService.toDto(currentUser));
+            });
+
+            config.routes.put("/api/mi-perfil", ctx -> {
+                UsuarioEntity currentUser = authService.requireCurrentUser(SessionUtil.getCurrentUserId(ctx));
+                ActualizarPerfilRequest request = ctx.bodyAsClass(ActualizarPerfilRequest.class);
+                ctx.json(usuarioService.updateOwnProfile(currentUser, request));
             });
 
             config.routes.get("/api/usuarios", ctx -> {
