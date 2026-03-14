@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="estilo.css">
-    <title>Login - Blog</title>
+    <title>Login - Eventos Academicos</title>
     <style>
         .recordar-row {
             text-align: center;
@@ -42,6 +42,20 @@
         .error-message.show {
             display: block;
         }
+
+        .success-message {
+            color: #51cf66;
+            background: rgba(81, 207, 102, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 3px solid #51cf66;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
     </style>
 </head>
 
@@ -50,6 +64,7 @@
         <h1>Iniciar sesión</h1>
 
         <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
 
         <form action="/procesarLogin" method="post">
             <div class="form-group-simple">
@@ -79,8 +94,13 @@
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('error')) {
             const errorDiv = document.getElementById('errorMessage');
-            errorDiv.textContent = 'Usuario o contraseña incorrectos. Por favor intenta de nuevo.';
+            errorDiv.textContent = 'Usuario o contrasena incorrectos. Por favor intenta de nuevo.';
             errorDiv.classList.add('show');
+        }
+        if (urlParams.get('registered')) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = 'Registro completado. Ya puedes iniciar sesion.';
+            successDiv.classList.add('show');
         }
     </script>
 </body>

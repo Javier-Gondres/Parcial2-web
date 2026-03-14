@@ -1,0 +1,36 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: parcial2-app
+    restart: unless-stopped
+    environment:
+      TZ: ${APP_TIMEZONE:-America/Santo_Domingo}
+      JAVA_TOOL_OPTIONS: -Duser.timezone=${APP_TIMEZONE:-America/Santo_Domingo}
+    expose:
+      - "7000"
+      - "9092"
+    volumes:
+      - h2_data:/var/lib/parcial2/data
+
+  reverse-proxy:
+    image: caddy:2
+    container_name: parcial2-caddy
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  h2_data:
+  caddy_data:
+  caddy_config:
