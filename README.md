@@ -10,3 +10,5 @@
 - App desplegada: https://jgdeveloper.me
 - Imagen Docker Hub: `javierpucmm/parcial2web:latest`
 - Docker Hub: https://hub.docker.com/r/javierpucmm/parcial2web
+- Link de youtube: https://youtu.be/cwmBawLGw_8
+- Link del repositorio: https://github.com/Javier-Gondres/Parcial2-web
