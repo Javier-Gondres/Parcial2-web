@@ -1,19 +1,12 @@
-Aplicación en: http://localhost:7000
+# Parcial 2 - Gestion de Eventos Academicos
 
-## Usuarios por defecto
+## Datos de acceso
 
-- admin / 123456 (Administrador)
-- autor / 123456 (Autor)
+- Usuario por defecto: `admin`
+- Contrasena por defecto: `123456`
 
-## Variables de entorno
+## Enlaces
 
-- JDBC_DATABASE_URL: URL de CockroachDB para audit de logins
-- JASYPT_PASSWORD: Clave para encriptar cookie "recordar usuario" (opcional)
-
-Ver env.example para más detalles
-
-Para que se pueda encontrar el archivo ".env", este debe de estar
-en la raiz del proyecto y llamarse ".env", con las correspondientes variables
-de entorno dentro
-
-Repositorio: https://github.com/Javier-Gondres/parcial2
+- App desplegada: https://jgdeveloper.me
+- Imagen Docker Hub: `javierpucmm/parcial2web:latest`
+- Docker Hub: https://hub.docker.com/r/javierpucmm/parcial2web
