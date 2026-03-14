@@ -11,40 +11,36 @@
 
 <body class="page-with-footer">
     <header class="header container-fluid py-4 mb-4 border-bottom shadow-sm bg-light">
-        <div class="container d-flex justify-content-between align-items-center">
+        <div class="container app-header-inner home-header">
             <h1 class="m-0 text-primary">Gestión de Eventos</h1>
-            <nav id="auth-links" class="nav-links d-none d-md-flex align-items-center flex-wrap gap-2">
-                <!-- Se llenará dinámicamente -->
+            <nav id="auth-links" class="nav-links app-auth-nav">
             </nav>
-            <div class="d-md-none">
-                <a href="Login.html" class="text-dark fw-bold me-2 small text-decoration-underline">Login</a>
-            </div>
         </div>
     </header>
 
     <main class="container">
         <!-- Panel de acciones rápidas para organizadores/administradores -->
         <div id="panel-admin-organizador"
-            class="mb-4 p-3 bg-white shadow-sm rounded border-start border-4 border-primary" style="display: none;">
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            class="mb-4 p-3 bg-white shadow-sm rounded border-start border-4 border-primary home-admin-panel" style="display: none;">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 home-admin-panel-inner">
                 <h4 class="m-0">Panel de Control: Eventos</h4>
-                <div>
-                    <button class="btn btn-success me-2 fw-bold" data-bs-toggle="modal"
+                <div class="home-admin-actions">
+                    <button class="btn btn-success me-2 fw-bold home-admin-button" data-bs-toggle="modal"
                         data-bs-target="#modalEscanearQR">
                         Escanear QR Asistencia
                     </button>
-                    <button class="btn btn-primary fw-bold" data-bs-toggle="modal" data-bs-target="#modalCrearEvento">
+                    <button class="btn btn-primary fw-bold home-admin-button" data-bs-toggle="modal" data-bs-target="#modalCrearEvento">
                         + Crear Evento
                     </button>
                 </div>
             </div>
         </div>
 
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3 home-toolbar">
             <h3 class="fw-bold">Eventos</h3>
-            <div class="d-flex align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2 home-filter-group">
                 <label for="filtro-eventos" class="fw-semibold text-muted mb-0">Filtrar:</label>
-                <select id="filtro-eventos" class="form-select form-select-sm" style="width: 220px;" onchange="cambiarFiltroEventos()">
+                <select id="filtro-eventos" class="form-select form-select-sm home-filter-select" onchange="cambiarFiltroEventos()">
                     <option value="todos">Todos los eventos</option>
                     <option value="proximos">Eventos proximos</option>
                     <option value="pasados">Eventos pasados</option>
@@ -58,7 +54,7 @@
             </div>
         </div>
 
-        <!-- Layout estilo Lista de tarjetas (Grid Responsiva) -->
+        <!-- Layout estilo Lista de tarjetas -->
         <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5" id="contenedor-eventos">
             <div class="col-12 text-center py-5 text-muted">
                 <div class="spinner-border text-primary mb-3" role="status"></div>
@@ -66,7 +62,7 @@
             </div>
         </div>
 
-        <nav id="paginacion-eventos" class="d-flex justify-content-center mb-4" aria-label="Paginacion de eventos"></nav>
+        <nav id="paginacion-eventos" class="d-flex justify-content-center mb-4 home-pagination" aria-label="Paginacion de eventos"></nav>
 
         <div id="error-container" style="display: none;"></div>
     </main>
@@ -80,11 +76,10 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Librería para Estadísticas/Gráficos -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Librería para generar el código QR en el cliente -->
+    <!-- QR -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
 
-    <!-- Modal Crear/Editar Evento-->
     <div class="modal fade text-dark" id="modalCrearEvento" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -145,7 +140,7 @@
         </div>
     </div>
 
-    <!-- Modal QR de Inscripción -->
+    <!-- QR -->
     <div class="modal fade" id="modalMiQR" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-sm modal-dialog-centered">
             <div class="modal-content">
@@ -162,7 +157,6 @@
         </div>
     </div>
 
-    <!-- Modal Resumen de Estadísticas del Evento -->
     <div class="modal fade" id="modalEstadisticas" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
@@ -198,7 +192,6 @@
                         </div>
                     </div>
 
-                    <!-- Gráficos -->
                     <div class="row g-3">
                         <div class="col-md-6">
                             <div class="card shadow-sm border-0 h-100">
@@ -223,7 +216,6 @@
         </div>
     </div>
 
-    <!-- Modal Escanear QR -->
     <div class="modal fade" id="modalEscanearQR" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -246,7 +238,6 @@
         </div>
     </div>
 
-    <!-- Funci -->
     <script>
         let currentUser = null;
         let todosLosEventos = [];

@@ -47,6 +47,25 @@ body {
     background-color: white !important;
 }
 
+.app-header-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.app-auth-nav {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.app-auth-nav > * {
+    margin: 0 !important;
+}
+
 /* Blog Components */
 .articulo {
     padding: 25px !important;
@@ -122,4 +141,188 @@ body {
     font-weight: bold !important;
     border-radius: 8px !important;
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.home-header h1 {
+    line-height: 1.1;
+}
+
+.home-filter-select {
+    width: 220px;
+}
+
+.home-admin-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.home-admin-actions .home-admin-button {
+    margin-right: 0 !important;
+}
+
+.home-pagination .pagination {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+}
+
+@media (max-width: 991.98px) {
+    .home-toolbar {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: 12px;
+    }
+
+    .home-filter-group {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+    }
+
+    .home-filter-select {
+        width: 100%;
+        min-width: 0;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .header {
+        padding-top: 1.25rem !important;
+        padding-bottom: 1.25rem !important;
+    }
+
+    .app-header-inner,
+    .home-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .app-auth-nav {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .form-container-simple {
+        max-width: 520px;
+        margin: 48px auto;
+        padding: 32px 28px;
+    }
+
+    .home-header h1 {
+        font-size: 1.7rem;
+    }
+
+    .home-admin-panel {
+        padding: 1rem !important;
+    }
+
+    .home-admin-panel-inner {
+        align-items: stretch !important;
+    }
+
+    .home-admin-actions {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .home-admin-button {
+        width: 100%;
+    }
+
+    .home-filter-group {
+        flex-direction: column;
+        align-items: stretch !important;
+    }
+
+    .home-filter-group label,
+    .home-filter-group #vista-filtro {
+        align-self: flex-start;
+    }
+
+    #contenedor-eventos .card-title {
+        font-size: 1.1rem;
+    }
+
+    #contenedor-eventos .card-subtitle,
+    #contenedor-eventos .card-text {
+        font-size: 0.95rem;
+    }
+
+    .modal-dialog {
+        margin: 0.75rem;
+    }
+
+    #qr-reader {
+        width: 100% !important;
+    }
+}
+
+@media (max-width: 575.98px) {
+    body {
+        font-size: 0.95rem;
+    }
+
+    .app-auth-nav {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .app-auth-nav > a,
+    .app-auth-nav > .btn,
+    .app-auth-nav > div {
+        width: 100%;
+    }
+
+    .app-auth-nav > div {
+        justify-content: flex-start !important;
+    }
+
+    .home-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .home-toolbar h3,
+    .home-admin-panel h4 {
+        font-size: 1.1rem;
+    }
+
+    .page-with-footer main.container,
+    main.container {
+        padding-left: 0.9rem;
+        padding-right: 0.9rem;
+    }
+
+    .home-pagination .page-link {
+        padding: 0.35rem 0.55rem;
+        font-size: 0.85rem;
+    }
+
+    #modalCrearEvento .modal-body,
+    #modalEstadisticas .modal-body,
+    #modalEscanearQR .modal-body {
+        padding: 1rem;
+    }
+
+    .form-container-simple {
+        max-width: none;
+        width: calc(100% - 1.5rem);
+        margin: 24px auto;
+        padding: 24px 18px;
+        border-radius: 12px;
+    }
+
+    .form-container-simple h1 {
+        font-size: 1.9rem;
+        margin-bottom: 1rem;
+    }
+
+    .form-group-simple {
+        margin-bottom: 16px;
+    }
+
+    .form-group-simple input,
+    .btn-simple {
+        padding: 11px;
+        font-size: 1rem;
+    }
 }
